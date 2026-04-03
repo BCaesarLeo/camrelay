@@ -1,0 +1,52 @@
+name: StudioRelay
+options:
+  bundleIdPrefix: com.studiorelay
+  deploymentTarget:
+    iOS: "16.0"
+
+settings:
+  DEVELOPMENT_TEAM: UBH8A2T2G2
+  CODE_SIGN_STYLE: Automatic
+  GENERATE_INFOPLIST_FILE: YES
+  MARKETING_VERSION: "1.0.0"
+  CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  StudioRelay:
+    type: application
+    platform: iOS
+    sources:
+      - StudioRelay
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.studiorelay.app
+      INFOPLIST_VALUES:
+        CFBundleDisplayName: StudioRelay
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        "UISupportedInterfaceOrientations~ipad": [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    entitlements:
+      path: StudioRelay/StudioRelay.entitlements
+    dependencies:
+      - target: StudioRelayClip
+        embed: true
+
+  StudioRelayClip:
+    type: application.on-demand-install-capable
+    platform: iOS
+    sources:
+      - StudioRelayClip
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.studiorelay.app.Clip
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      INFOPLIST_VALUES:
+        CFBundleDisplayName: StudioRelay
+        NSPhotoLibraryAddUsageDescription: "StudioRelay needs access to save your event photos to your Photo Library."
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        "UISupportedInterfaceOrientations~ipad": [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+      NSAppTransportSecurity:
+        NSAllowsLocalNetworking: true
+        NSAllowsArbitraryLoads: true
+    entitlements:
+      path: StudioRelayClip/StudioRelayClip.entitlements

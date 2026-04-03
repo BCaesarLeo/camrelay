@@ -1,0 +1,7 @@
+version: 1
+bundleID: com.studiorelay.clip
+infoPlist:
+  NSPhotoLibraryAddUsageDescription: "StudioRelay needs access to save your event photos to your Photo Library."
+  NSAppTransportSecurity:
+    NSAllowsLocalNetworking: true
+    NSAllowsArbitraryLoads: true

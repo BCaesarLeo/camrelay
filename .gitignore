@@ -1,0 +1,10 @@
+node_modules/
+dist/
+storage/
+*.db
+*.db-wal
+*.db-shm
+.env
+.keys/
+*.p8
+.DS_Store

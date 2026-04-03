@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>StudioRelay — Download</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%; width: 100%;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .container {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .content {
+      text-align: center;
+      padding: 40px;
+      max-width: 500px;
+      animation: fadeIn 0.6s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .brand {
+      font-size: 11px; font-weight: 300;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      color: #333; margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: clamp(24px, 4vw, 36px);
+      font-weight: 300; letter-spacing: -0.02em;
+      color: #f0f0f0; margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px; color: #555;
+      font-weight: 300; margin-bottom: 32px;
+    }
+
+    .wifi-banner {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; font-size: 13px; margin-bottom: 32px;
+      padding: 10px 0;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    .wifi-label { color: #444; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .wifi-name { color: #888; }
+    .wifi-pass { color: #444; }
+
+    .qr-container {
+      display: inline-block; padding: 20px;
+      background: #fff; border-radius: 4px;
+    }
+
+    .qr-placeholder {
+      width: 240px; height: 240px;
+      display: grid;
+      grid-template-columns: repeat(11, 1fr);
+      grid-template-rows: repeat(11, 1fr);
+      gap: 2px;
+    }
+    .qr-cell { border-radius: 1px; }
+
+    .url {
+      margin-top: 16px; font-size: 11px;
+      color: #2a2a2a; font-family: monospace;
+      word-break: break-all; letter-spacing: 0.03em;
+    }
+
+    .steps {
+      display: flex; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 32px;
+    }
+    .step { font-size: 12px; color: #444; font-weight: 300; letter-spacing: 0.05em; }
+    .step-dot { color: #2a2a2a; }
+
+    .footer {
+      margin-top: 48px;
+      display: flex; align-items: center; justify-content: center; gap: 16px;
+    }
+
+    .new-btn {
+      padding: 12px 28px; font-size: 12px; font-weight: 400;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #555; background: transparent;
+      border: 1px solid #222; font-family: inherit;
+      cursor: pointer; transition: all 0.3s;
+    }
+    .new-btn:hover { border-color: #444; color: #888; }
+
+    .countdown { font-size: 12px; color: #222; font-weight: 300; }
+
+    .proto-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.95); border-top: 1px solid #1a1a1a;
+      padding: 12px 20px; display: flex; gap: 12px; justify-content: center; z-index: 999;
+    }
+    .proto-nav a {
+      color: #444; text-decoration: none; font-size: 11px; letter-spacing: 0.08em;
+      padding: 8px 16px; border: 1px solid #1a1a1a; transition: all 0.2s;
+    }
+    .proto-nav a:hover { color: #888; border-color: #333; }
+    .proto-nav a.active { color: #4353FF; border-color: #4353FF; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="content">
+      <p class="brand">StudioRelay</p>
+      <h1>Scan to download</h1>
+      <p class="subtitle">3 photos ready</p>
+
+      <div class="wifi-banner">
+        <span class="wifi-label">WiFi</span>
+        <span class="wifi-name">PhotoBooth-5G</span>
+        <span class="wifi-pass">&middot; photos2026</span>
+      </div>
+
+      <div class="qr-container">
+        <div class="qr-placeholder" id="qr"></div>
+      </div>
+
+      <p class="url">http://192.168.0.173:3100/dl/V1StGXR8_Z5jdHi6B-myT</p>
+
+      <div class="steps">
+        <span class="step">Connect to WiFi</span>
+        <span class="step-dot">&middot;</span>
+        <span class="step">Scan code</span>
+        <span class="step-dot">&middot;</span>
+        <span class="step">Download</span>
+      </div>
+
+      <div class="footer">
+        <button class="new-btn" onclick="window.location.href='welcome.html'">New session</button>
+        <span class="countdown" id="countdown">60s</span>
+      </div>
+    </div>
+  </div>
+
+  <nav class="proto-nav">
+    <a href="welcome.html">Welcome</a>
+    <a href="session.html">Session</a>
+    <a href="review.html">Review</a>
+    <a href="qr.html" class="active">QR</a>
+    <a href="phone-download.html">Phone</a>
+  </nav>
+
+  <script>
+    const qr = document.getElementById('qr');
+    const pattern = [1,1,1,1,1,1,1,0,1,0,1,1,0,0,0,0,0,1,0,0,1,0,1,0,1,1,1,0,1,0,1,0,1,1,0,1,1,1,0,1,0,0,1,1,1,0,1,1,1,0,1,0,1,1,0,1,0,0,0,0,0,1,0,0,0,1,1,1,1,1,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,1,1,0,1,0,1,1,0,1,1,1,0,0,1,0,1,0,0,1,0,0,1,1,0,0,1,1,1,0,1,1,1,0,1,1,1];
+    pattern.forEach(v => {
+      const cell = document.createElement('div');
+      cell.className = 'qr-cell';
+      cell.style.background = v ? '#000' : '#fff';
+      qr.appendChild(cell);
+    });
+
+    let seconds = 60;
+    const el = document.getElementById('countdown');
+    setInterval(() => {
+      seconds--;
+      if (seconds <= 0) seconds = 60;
+      el.textContent = `${seconds}s`;
+    }, 1000);
+  </script>
+</body>
+</html>

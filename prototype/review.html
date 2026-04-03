@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>StudioRelay — Review</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%; width: 100%;
+      background: #0a0a0a;
+      color: #f0f0f0;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .layout { height: 100%; display: flex; flex-direction: column; }
+
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 24px 32px 8px; flex-shrink: 0;
+    }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: none; color: #555;
+      font-size: 13px; font-weight: 400; cursor: pointer;
+      font-family: inherit; letter-spacing: 0.05em;
+    }
+    .header-label {
+      font-size: 13px; font-weight: 300; letter-spacing: 0.15em;
+      text-transform: uppercase; color: #4a4a4a;
+    }
+
+    .subtitle {
+      padding: 12px 32px 0; color: #333;
+      font-size: 13px; font-weight: 300;
+    }
+
+    .grid {
+      flex: 1; overflow: auto; padding: 16px 24px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 8px; align-content: start; padding-bottom: 100px;
+    }
+
+    .photo-card {
+      position: relative; overflow: hidden; cursor: pointer;
+      border-radius: 2px; border: 2px solid rgba(45, 212, 168, 0.3);
+      transition: all 0.2s;
+    }
+    .photo-card:active { opacity: 0.8; }
+
+    .photo-inner {
+      width: 100%; aspect-ratio: 3 / 2;
+    }
+
+    .remove-hint {
+      position: absolute; top: 10px; right: 10px;
+      width: 32px; height: 32px; border-radius: 2px;
+      background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      color: #888; opacity: 0.6;
+    }
+
+    .bottom-bar {
+      padding: 16px 32px;
+      padding-bottom: max(20px, env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+    .get-btn {
+      width: 100%; padding: 18px;
+      font-size: 14px; font-weight: 400; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #fff;
+      background: #4353FF; border: none;
+      font-family: inherit; cursor: pointer;
+      transition: opacity 0.3s;
+    }
+    .get-btn:active { opacity: 0.85; }
+
+    .proto-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(0,0,0,0.95); border-top: 1px solid #1a1a1a;
+      padding: 12px 20px; display: flex; gap: 12px; justify-content: center; z-index: 999;
+    }
+    .proto-nav a {
+      color: #444; text-decoration: none; font-size: 11px; letter-spacing: 0.08em;
+      padding: 8px 16px; border: 1px solid #1a1a1a; transition: all 0.2s;
+    }
+    .proto-nav a:hover { color: #888; border-color: #333; }
+    .proto-nav a.active { color: #4353FF; border-color: #4353FF; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <div class="header">
+      <button class="back-btn" onclick="window.location.href='session.html'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+        Back
+      </button>
+      <span class="header-label">Review</span>
+      <div style="width: 80px;"></div>
+    </div>
+
+    <p class="subtitle">3 photos selected — tap to remove</p>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="bottom-bar">
+      <button class="get-btn" onclick="window.location.href='qr.html'">
+        Get my photos
+      </button>
+    </div>
+  </div>
+
+  <nav class="proto-nav">
+    <a href="welcome.html">Welcome</a>
+    <a href="session.html">Session</a>
+    <a href="review.html" class="active">Review</a>
+    <a href="qr.html">QR</a>
+    <a href="phone-download.html">Phone</a>
+  </nav>
+
+  <script>
+    const grid = document.getElementById('grid');
+    [200, 160, 40].forEach(hue => {
+      const card = document.createElement('div');
+      card.className = 'photo-card';
+      card.innerHTML = `
+        <div class="photo-inner" style="background:linear-gradient(135deg,
+          hsl(${hue}, 40%, 15%) 0%,
+          hsl(${hue + 30}, 35%, 22%) 50%,
+          hsl(${hue + 60}, 30%, 12%) 100%);"></div>
+        <div class="remove-hint">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </div>
+      `;
+      card.addEventListener('click', () => card.remove());
+      grid.appendChild(card);
+    });
+  </script>
+</body>
+</html>

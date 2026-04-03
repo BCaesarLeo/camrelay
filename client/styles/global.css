@@ -1,0 +1,62 @@
+:root {
+  --bg: #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-card: #161616;
+  --bg-hover: #1c1c1c;
+  --text: #f0f0f0;
+  --text-secondary: #8a8a8a;
+  --text-dim: #4a4a4a;
+  --accent: #4353FF;
+  --accent-glow: rgba(67, 83, 255, 0.2);
+  --success: #2dd4a8;
+  --success-glow: rgba(45, 212, 168, 0.2);
+  --border: #1e1e1e;
+  --radius: 4px;
+  --radius-lg: 8px;
+  font-family: "Inter", -apple-system, system-ui, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  user-select: none;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+button {
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+/* Minimal scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 2px;
+}
