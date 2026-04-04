@@ -1,9 +1,21 @@
-import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
+import twilio from "twilio";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import os from "os";
 
-const sns = new SNSClient({ region: "us-east-1" });
+// Lazy-init Twilio client (env vars loaded by dotenv in config.ts before this runs)
+let _twilioClient: ReturnType<typeof twilio> | null = null;
+function getTwilioClient() {
+  if (!_twilioClient && process.env.TWILIO_ACCOUNT_SID) {
+    _twilioClient = twilio(
+      process.env.TWILIO_API_KEY_SID || process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_API_KEY_SECRET || process.env.TWILIO_AUTH_TOKEN,
+      { accountSid: process.env.TWILIO_ACCOUNT_SID }
+    );
+  }
+  return _twilioClient;
+}
+function getTwilioMsgServiceSid() { return process.env.TWILIO_MESSAGING_SERVICE_SID || ""; }
 
 let internetAvailable = false;
 let checking = false;
@@ -44,13 +56,15 @@ export async function sendSMS(
   downloadToken: string,
   photoCount: number
 ): Promise<boolean> {
-  if (!phone) return false;
+  const twilioClient = getTwilioClient();
+  const msgServiceSid = getTwilioMsgServiceSid();
+  if (!phone || !twilioClient || !msgServiceSid) return false;
 
   // Build the download URL — use local IP since they need to be on WiFi
   const lanIp = getLanIp();
   const downloadUrl = `http://${lanIp}:${config.port}/dl/${downloadToken}`;
 
-  const message =
+  const body =
     `${config.eventName}: Hi ${name}! Your ${photoCount} photo${photoCount !== 1 ? "s" : ""} are ready. ` +
     `Connect to WiFi "${config.wifiNetwork || "event network"}" and open: ${downloadUrl}`;
 
@@ -61,22 +75,11 @@ export async function sendSMS(
       cleanPhone = "+1" + cleanPhone; // Default to US
     }
 
-    await sns.send(
-      new PublishCommand({
-        PhoneNumber: cleanPhone,
-        Message: message,
-        MessageAttributes: {
-          "AWS.SNS.SMS.SMSType": {
-            DataType: "String",
-            StringValue: "Transactional",
-          },
-          "AWS.SNS.SMS.SenderID": {
-            DataType: "String",
-            StringValue: "StudioRly",
-          },
-        },
-      })
-    );
+    await twilioClient.messages.create({
+      body,
+      messagingServiceSid: msgServiceSid,
+      to: cleanPhone,
+    });
 
     // Mark as sent
     db.prepare("UPDATE contacts SET sms_sent = 1, sms_error = NULL WHERE id = ?").run(
@@ -85,12 +88,12 @@ export async function sendSMS(
     console.log(`[delivery] SMS sent to ${cleanPhone} for ${name}`);
     return true;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+    const errMsg = err instanceof Error ? err.message : String(err);
     db.prepare("UPDATE contacts SET sms_error = ? WHERE id = ?").run(
-      message,
+      errMsg,
       contactId
     );
-    console.error(`[delivery] SMS failed for ${name}:`, message);
+    console.error(`[delivery] SMS failed for ${name}:`, errMsg);
     return false;
   }
 }

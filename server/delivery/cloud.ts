@@ -1,10 +1,23 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
+import twilio from "twilio";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { isOnline } from "./index.js";
 import fs from "fs";
 import path from "path";
+
+let _twilioClient: ReturnType<typeof twilio> | null = null;
+function getTwilio() {
+  if (!_twilioClient && process.env.TWILIO_ACCOUNT_SID) {
+    _twilioClient = twilio(
+      process.env.TWILIO_API_KEY_SID || process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_API_KEY_SECRET || "",
+      { accountSid: process.env.TWILIO_ACCOUNT_SID }
+    );
+  }
+  return _twilioClient;
+}
 
 const s3 = new S3Client({ region: "us-east-1" });
 const ses = new SESClient({ region: "us-east-1" });
@@ -120,14 +133,53 @@ async function processContact(contact: any) {
     const downloadUrl = `https://${BUCKET}.s3.amazonaws.com/${downloadPageKey}`;
 
     // Send email
-    await sendEmail(contact.email, contact.name, eventName, downloadUrl, photoIds.length);
+    if (contact.email) {
+      await sendEmail(contact.email, contact.name, eventName, downloadUrl, photoIds.length);
+    }
+
+    // Send SMS with permanent S3 download link via Twilio
+    if (contact.phone) {
+      try {
+        let cleanPhone = contact.phone.replace(/[^+\d]/g, "");
+        if (!cleanPhone.startsWith("+")) cleanPhone = "+1" + cleanPhone;
+
+        const client = getTwilio();
+        const msgSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+        if (client && msgSid) {
+          // Send MMS with actual photos (max 10 per message, batch if more)
+          for (let batch = 0; batch < uploadedUrls.length; batch += 10) {
+            const mediaUrls = uploadedUrls.slice(batch, batch + 10);
+            const isFirst = batch === 0;
+
+            await client.messages.create({
+              body: isFirst
+                ? `${eventName}: Hi ${contact.name}! Here ${photoIds.length !== 1 ? "are" : "is"} your ${photoIds.length} photo${photoIds.length !== 1 ? "s" : ""} from the event.`
+                : `${contact.name} — photos continued (${batch + 1}-${Math.min(batch + 10, uploadedUrls.length)} of ${uploadedUrls.length})`,
+              messagingServiceSid: msgSid,
+              to: cleanPhone,
+              mediaUrl: mediaUrls,
+            });
+
+            if (batch + 10 < uploadedUrls.length) {
+              await new Promise((r) => setTimeout(r, 1000));
+            }
+          }
+          db.prepare("UPDATE contacts SET sms_sent = 1, sms_error = NULL WHERE id = ?").run(contact.id);
+          console.log(`[cloud] SMS sent to ${cleanPhone} for ${contact.name}`);
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        db.prepare("UPDATE contacts SET sms_error = ? WHERE id = ?").run(errMsg, contact.id);
+        console.error(`[cloud] SMS failed for ${contact.name}:`, errMsg);
+      }
+    }
 
     // Mark as synced
     db.prepare(
       "UPDATE contacts SET synced = 1, email_sent = 1, email_error = NULL WHERE id = ?"
     ).run(contact.id);
 
-    console.log(`[cloud] Email sent to ${contact.email} for ${contact.name}`);
+    console.log(`[cloud] Delivered to ${contact.name} (email: ${!!contact.email}, sms: ${!!contact.phone})`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     db.prepare("UPDATE contacts SET email_error = ? WHERE id = ?").run(

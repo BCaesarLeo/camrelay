@@ -42,12 +42,8 @@ export async function contactRoutes(app: FastifyInstance) {
       downloadToken
     );
 
-    // Fire-and-forget SMS if internet is available and phone provided
-    if (phone && isOnline()) {
-      sendSMS(id, phone, name, downloadToken, selectedPhotoIds.length).catch(
-        () => {}
-      );
-    }
+    // SMS + email are sent by cloud.ts AFTER photos upload to S3
+    // This ensures the link in the message works permanently
 
     return { id, name, email, phone };
   });
