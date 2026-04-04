@@ -67,6 +67,11 @@ db.exec(`
     phone TEXT,
     selected_photo_ids TEXT,
     download_token TEXT,
+    local_download INTEGER NOT NULL DEFAULT 0,
+    sms_sent INTEGER NOT NULL DEFAULT 0,
+    sms_error TEXT,
+    email_sent INTEGER NOT NULL DEFAULT 0,
+    email_error TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     synced INTEGER NOT NULL DEFAULT 0
   );

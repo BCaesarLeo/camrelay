@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { db } from "../db.js";
 import { config } from "../config.js";
+import { markLocalDownload } from "../delivery/index.js";
 import QRCode from "qrcode";
 import archiver from "archiver";
 import path from "path";
@@ -27,6 +28,10 @@ const getSelectedPhotos = db.prepare(`
 
 const getSession = db.prepare(`
   SELECT * FROM sessions WHERE id = ?
+`);
+
+const getTokenByToken = db.prepare(`
+  SELECT * FROM download_tokens WHERE token = ?
 `);
 
 function getLanIp(): string {
@@ -85,6 +90,16 @@ export async function downloadRoutes(app: FastifyInstance) {
         wifiQrDataUrl,
         selectedCount: count,
       };
+    }
+  );
+
+  // Check if a download token has been used (for success detection on kiosk)
+  app.get<{ Params: { token: string } }>(
+    "/api/download-status/:token",
+    async (req, reply) => {
+      const row = getTokenByToken.get(req.params.token) as any;
+      if (!row) return reply.status(404).send({ error: "Not found" });
+      return { downloaded: row.download_count > 0, count: row.download_count };
     }
   );
 
@@ -274,6 +289,7 @@ export async function downloadRoutes(app: FastifyInstance) {
         return reply.status(404).send({ error: "Photo not found" });
 
       incrementDownload.run(req.params.token);
+      markLocalDownload(req.params.token);
       const filename = photo.original_filename.replace(/\.[^.]+$/, ".jpg");
       reply.header("Content-Disposition", `attachment; filename="${filename}"`);
       return reply.sendFile(
@@ -299,6 +315,7 @@ export async function downloadRoutes(app: FastifyInstance) {
 
       const session = getSession.get(tokenRow.session_id) as any;
       incrementDownload.run(req.params.token);
+      markLocalDownload(req.params.token);
 
       const archive = archiver("zip", { zlib: { level: 1 } }); // fast compression since JPEGs are already compressed
 

@@ -16,6 +16,9 @@ import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
 import { startCapture } from "./capture/index.js";
+import { startInternetMonitor } from "./delivery/index.js";
+import { startCloudSync } from "./delivery/cloud.js";
+import { startDynamoSync } from "./delivery/dynamo.js";
 
 async function main() {
   // Ensure storage directories exist
@@ -186,6 +189,15 @@ async function main() {
 
   // Start capture in watch mode by default (can switch via /api/capture/start)
   await startCapture("watch");
+
+  // Start internet monitor + SMS retry loop
+  startInternetMonitor();
+
+  // Start cloud photo upload + email delivery (only runs when internet available)
+  startCloudSync();
+
+  // Start DynamoDB sync (only runs when internet available)
+  startDynamoSync();
 
   // Start server
   await app.listen({ port: config.port, host: config.host });

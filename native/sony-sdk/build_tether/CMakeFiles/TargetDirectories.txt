@@ -1,0 +1,7 @@
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/TetherCli.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/edit_cache.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/rebuild_cache.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/list_install_components.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/install.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/install/local.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build_tether/CMakeFiles/install/strip.dir

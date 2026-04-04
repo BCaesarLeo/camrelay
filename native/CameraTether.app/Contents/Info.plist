@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.studiorelay.camera-tether</string>
+    <key>CFBundleName</key>
+    <string>CameraTether</string>
+    <key>CFBundleExecutable</key>
+    <string>CameraTether</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>LSBackgroundOnly</key>
+    <true/>
+    <key>NSCameraUsageDescription</key>
+    <string>StudioRelay needs camera access for tethered photo capture.</string>
+</dict>
+</plist>

@@ -1,0 +1,192 @@
+import { SNSClient, PublishCommand } from "@aws-sdk/client-sns";
+import { db } from "../db.js";
+import { config } from "../config.js";
+import os from "os";
+
+const sns = new SNSClient({ region: "us-east-1" });
+
+let internetAvailable = false;
+let checking = false;
+
+// Check internet connectivity every 30 seconds
+export function startInternetMonitor() {
+  checkInternet();
+  setInterval(checkInternet, 30000);
+  // Also start the retry loop
+  setInterval(retryFailedDeliveries, 60000);
+}
+
+async function checkInternet(): Promise<boolean> {
+  if (checking) return internetAvailable;
+  checking = true;
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    await fetch("https://1.1.1.1", { signal: controller.signal, method: "HEAD" });
+    clearTimeout(timeout);
+    internetAvailable = true;
+  } catch {
+    internetAvailable = false;
+  }
+  checking = false;
+  return internetAvailable;
+}
+
+export function isOnline(): boolean {
+  return internetAvailable;
+}
+
+// Send SMS with download link
+export async function sendSMS(
+  contactId: string,
+  phone: string,
+  name: string,
+  downloadToken: string,
+  photoCount: number
+): Promise<boolean> {
+  if (!phone) return false;
+
+  // Build the download URL — use local IP since they need to be on WiFi
+  const lanIp = getLanIp();
+  const downloadUrl = `http://${lanIp}:${config.port}/dl/${downloadToken}`;
+
+  const message =
+    `${config.eventName}: Hi ${name}! Your ${photoCount} photo${photoCount !== 1 ? "s" : ""} are ready. ` +
+    `Connect to WiFi "${config.wifiNetwork || "event network"}" and open: ${downloadUrl}`;
+
+  try {
+    // Clean phone number — ensure it has country code
+    let cleanPhone = phone.replace(/[^+\d]/g, "");
+    if (!cleanPhone.startsWith("+")) {
+      cleanPhone = "+1" + cleanPhone; // Default to US
+    }
+
+    await sns.send(
+      new PublishCommand({
+        PhoneNumber: cleanPhone,
+        Message: message,
+        MessageAttributes: {
+          "AWS.SNS.SMS.SMSType": {
+            DataType: "String",
+            StringValue: "Transactional",
+          },
+          "AWS.SNS.SMS.SenderID": {
+            DataType: "String",
+            StringValue: "StudioRly",
+          },
+        },
+      })
+    );
+
+    // Mark as sent
+    db.prepare("UPDATE contacts SET sms_sent = 1, sms_error = NULL WHERE id = ?").run(
+      contactId
+    );
+    console.log(`[delivery] SMS sent to ${cleanPhone} for ${name}`);
+    return true;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    db.prepare("UPDATE contacts SET sms_error = ? WHERE id = ?").run(
+      message,
+      contactId
+    );
+    console.error(`[delivery] SMS failed for ${name}:`, message);
+    return false;
+  }
+}
+
+// Update local download status when a token is used
+export function markLocalDownload(token: string) {
+  db.prepare(
+    "UPDATE contacts SET local_download = 1 WHERE download_token = ?"
+  ).run(token);
+}
+
+// Retry failed SMS deliveries when internet comes back
+async function retryFailedDeliveries() {
+  if (!internetAvailable) return;
+
+  const pending = db
+    .prepare(
+      `SELECT c.*, dt.download_count
+       FROM contacts c
+       LEFT JOIN download_tokens dt ON c.download_token = dt.token
+       WHERE c.phone IS NOT NULL
+         AND c.phone != ''
+         AND c.sms_sent = 0
+         AND (c.sms_error IS NOT NULL OR c.sms_error IS NULL)
+       ORDER BY c.created_at ASC
+       LIMIT 10`
+    )
+    .all() as any[];
+
+  if (pending.length === 0) return;
+
+  console.log(`[delivery] Retrying ${pending.length} pending SMS deliveries...`);
+
+  for (const contact of pending) {
+    const photoIds = JSON.parse(contact.selected_photo_ids || "[]");
+    await sendSMS(
+      contact.id,
+      contact.phone,
+      contact.name,
+      contact.download_token,
+      photoIds.length
+    );
+    // Small delay between sends
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+}
+
+// Get delivery status for all contacts in current event
+export function getDeliveryStatus() {
+  const rows = db
+    .prepare(
+      `SELECT c.*, dt.download_count
+       FROM contacts c
+       LEFT JOIN download_tokens dt ON c.download_token = dt.token
+       ORDER BY c.created_at DESC`
+    )
+    .all() as any[];
+
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    phone: r.phone,
+    sessionId: r.session_id,
+    createdAt: r.created_at,
+    localDownload: r.local_download === 1 || (r.download_count ?? 0) > 0,
+    smsSent: r.sms_sent === 1,
+    smsError: r.sms_error,
+    emailSent: r.email_sent === 1,
+    emailError: r.email_error,
+    synced: r.synced === 1,
+    status: getStatusLabel(r),
+  }));
+}
+
+function getStatusLabel(r: any): string {
+  const localDone = r.local_download === 1 || (r.download_count ?? 0) > 0;
+  const smsDone = r.sms_sent === 1;
+
+  if (localDone && smsDone) return "delivered_both";
+  if (localDone) return "delivered_local";
+  if (smsDone) return "delivered_sms";
+  if (r.sms_error) return "sms_failed";
+  if (r.phone) return "pending_sms";
+  return "pending";
+}
+
+function getLanIp(): string {
+  const interfaces = os.networkInterfaces();
+  for (const iface of Object.values(interfaces)) {
+    if (!iface) continue;
+    for (const addr of iface) {
+      if (addr.family === "IPv4" && !addr.internal) {
+        return addr.address;
+      }
+    }
+  }
+  return "localhost";
+}

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../hooks/useStore";
 import { api } from "../lib/api";
 
-export function SessionsList() {
+export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
   const sessions = useStore((s) => s.sessions);
   const loadSessions = useStore((s) => s.loadSessions);
   const createSession = useStore((s) => s.createSession);
@@ -84,8 +84,8 @@ export function SessionsList() {
             </div>
           )}
 
-          {/* New session "+" button */}
-          <motion.button
+          {/* New session "+" button — hidden in kiosk mode */}
+          {!kiosk && <motion.button
             style={styles.newSessionBtn}
             onClick={handleNewSession}
             whileTap={{ scale: 0.9 }}
@@ -94,7 +94,7 @@ export function SessionsList() {
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
-          </motion.button>
+          </motion.button>}
         </div>
 
         {/* Flash feedback when new session created */}

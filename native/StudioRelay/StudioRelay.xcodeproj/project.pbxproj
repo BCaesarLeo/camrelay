@@ -1,0 +1,452 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		079837FDBF4B092FD4F3121B /* StudioRelayApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EC1DDD97419AB5C09EC3A42 /* StudioRelayApp.swift */; };
+		4156325CC920D9E879AF23CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A85932E0C91A540764DC17BB /* Assets.xcassets */; };
+		72B1D98B8BBC6EA52DA6A0C3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FE41CBF9020BF43525B3979 /* ContentView.swift */; };
+		D1074C87003D8D87E196629F /* StudioRelayClipApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFEF9BF4D3BA18CE7479717E /* StudioRelayClipApp.swift */; };
+		EBE29E6E5F08D5AD6BB1E38C /* StudioRelayClip.app in Embed App Clips */ = {isa = PBXBuildFile; fileRef = B1C1B3E01AC3B87DE1684FFC /* StudioRelayClip.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		F009806DDE83FB137E6F76D3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7498F9AC47163F7A2E4ACE0C /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1AAEBB00F3574CF5CCC59123 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 28DC3267FFEE42856E7606AA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DE015ABD1DBD269706786B3E;
+			remoteInfo = StudioRelayClip;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8DFE5CED8F547F846F4AC1DA /* Embed App Clips */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
+			dstSubfolderSpec = 16;
+			files = (
+				EBE29E6E5F08D5AD6BB1E38C /* StudioRelayClip.app in Embed App Clips */,
+			);
+			name = "Embed App Clips";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		39CA923BCFD76402709E08DB /* StudioRelay.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StudioRelay.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4EC1DDD97419AB5C09EC3A42 /* StudioRelayApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioRelayApp.swift; sourceTree = "<group>"; };
+		7498F9AC47163F7A2E4ACE0C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9FE41CBF9020BF43525B3979 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A85932E0C91A540764DC17BB /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		B1C1B3E01AC3B87DE1684FFC /* StudioRelayClip.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = StudioRelayClip.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		BCA85F68417C68D0F9E126B7 /* StudioRelayClip.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StudioRelayClip.entitlements; sourceTree = "<group>"; };
+		CFEF9BF4D3BA18CE7479717E /* StudioRelayClipApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioRelayClipApp.swift; sourceTree = "<group>"; };
+		D70B3F01DD5AD698FECF7B7D /* StudioRelay.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = StudioRelay.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0692247B10A71B1F4514B327 /* StudioRelay */ = {
+			isa = PBXGroup;
+			children = (
+				A85932E0C91A540764DC17BB /* Assets.xcassets */,
+				D70B3F01DD5AD698FECF7B7D /* StudioRelay.entitlements */,
+				4EC1DDD97419AB5C09EC3A42 /* StudioRelayApp.swift */,
+			);
+			path = StudioRelay;
+			sourceTree = "<group>";
+		};
+		9156AC4ED4D960DF65A60C58 /* StudioRelayClip */ = {
+			isa = PBXGroup;
+			children = (
+				7498F9AC47163F7A2E4ACE0C /* Assets.xcassets */,
+				9FE41CBF9020BF43525B3979 /* ContentView.swift */,
+				BCA85F68417C68D0F9E126B7 /* StudioRelayClip.entitlements */,
+				CFEF9BF4D3BA18CE7479717E /* StudioRelayClipApp.swift */,
+			);
+			path = StudioRelayClip;
+			sourceTree = "<group>";
+		};
+		A37339E7A1E1CA6FBB307E01 = {
+			isa = PBXGroup;
+			children = (
+				0692247B10A71B1F4514B327 /* StudioRelay */,
+				9156AC4ED4D960DF65A60C58 /* StudioRelayClip */,
+				AA3FF0F086D3E8D2F7C276E0 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		AA3FF0F086D3E8D2F7C276E0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				39CA923BCFD76402709E08DB /* StudioRelay.app */,
+				B1C1B3E01AC3B87DE1684FFC /* StudioRelayClip.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		DE015ABD1DBD269706786B3E /* StudioRelayClip */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A9F0C1C3C3AE9A1E0B3821D8 /* Build configuration list for PBXNativeTarget "StudioRelayClip" */;
+			buildPhases = (
+				3E493DADCEDF2762727DAF47 /* Sources */,
+				AB598DD572CCB6438594CFE0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StudioRelayClip;
+			packageProductDependencies = (
+			);
+			productName = StudioRelayClip;
+			productReference = B1C1B3E01AC3B87DE1684FFC /* StudioRelayClip.app */;
+			productType = "com.apple.product-type.application.on-demand-install-capable";
+		};
+		DF3968705D166785D7D8A51F /* StudioRelay */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 524078C6FAB48DE2FF1E70F7 /* Build configuration list for PBXNativeTarget "StudioRelay" */;
+			buildPhases = (
+				22A66B761643029488A4B3B9 /* Sources */,
+				8C81470635B216F5351E27AA /* Resources */,
+				8DFE5CED8F547F846F4AC1DA /* Embed App Clips */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				99E867C40BB7B6F27D424371 /* PBXTargetDependency */,
+			);
+			name = StudioRelay;
+			packageProductDependencies = (
+			);
+			productName = StudioRelay;
+			productReference = 39CA923BCFD76402709E08DB /* StudioRelay.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		28DC3267FFEE42856E7606AA /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					DE015ABD1DBD269706786B3E = {
+						DevelopmentTeam = UBH8A2T2G2;
+						ProvisioningStyle = Automatic;
+					};
+					DF3968705D166785D7D8A51F = {
+						DevelopmentTeam = UBH8A2T2G2;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 1DD012B0515D4EDB02D648CC /* Build configuration list for PBXProject "StudioRelay" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A37339E7A1E1CA6FBB307E01;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = AA3FF0F086D3E8D2F7C276E0 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DF3968705D166785D7D8A51F /* StudioRelay */,
+				DE015ABD1DBD269706786B3E /* StudioRelayClip */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8C81470635B216F5351E27AA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4156325CC920D9E879AF23CD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AB598DD572CCB6438594CFE0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F009806DDE83FB137E6F76D3 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		22A66B761643029488A4B3B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				079837FDBF4B092FD4F3121B /* StudioRelayApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E493DADCEDF2762727DAF47 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				72B1D98B8BBC6EA52DA6A0C3 /* ContentView.swift in Sources */,
+				D1074C87003D8D87E196629F /* StudioRelayClipApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		99E867C40BB7B6F27D424371 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DE015ABD1DBD269706786B3E /* StudioRelayClip */;
+			targetProxy = 1AAEBB00F3574CF5CCC59123 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0055A80CA7D42ECBDD01B9B6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = StudioRelayClip/StudioRelayClip.entitlements;
+				INFOPLIST_VALUES = "[\"CFBundleDisplayName\": \"StudioRelay\", \"UILaunchScreen\": [:], \"NSPhotoLibraryAddUsageDescription\": \"StudioRelay needs access to save your event photos to your Photo Library.\", \"UISupportedInterfaceOrientations~ipad\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UISupportedInterfaceOrientations\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"]]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				NSAppTransportSecurity = "[\"NSAllowsLocalNetworking\": true, \"NSAllowsArbitraryLoads\": true]";
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiorelay.app.Clip;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		03B923788D63B4A50A4C2AB2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = UBH8A2T2G2;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		5872E1EBDA27582F4202E764 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = StudioRelay/StudioRelay.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_VALUES = "[\"CFBundleDisplayName\": \"StudioRelay\", \"UISupportedInterfaceOrientations\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UISupportedInterfaceOrientations~ipad\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UILaunchScreen\": [:]]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiorelay.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		64BB799B9490A0F0C9AB14CA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = UBH8A2T2G2;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B2ED75D6AF58534A315AAA17 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = StudioRelay/StudioRelay.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_VALUES = "[\"CFBundleDisplayName\": \"StudioRelay\", \"UISupportedInterfaceOrientations\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UISupportedInterfaceOrientations~ipad\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UILaunchScreen\": [:]]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiorelay.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		EF363F7F319147CB304C5D4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = StudioRelayClip/StudioRelayClip.entitlements;
+				INFOPLIST_VALUES = "[\"CFBundleDisplayName\": \"StudioRelay\", \"UILaunchScreen\": [:], \"NSPhotoLibraryAddUsageDescription\": \"StudioRelay needs access to save your event photos to your Photo Library.\", \"UISupportedInterfaceOrientations~ipad\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"], \"UISupportedInterfaceOrientations\": [\"UIInterfaceOrientationPortrait\", \"UIInterfaceOrientationPortraitUpsideDown\", \"UIInterfaceOrientationLandscapeLeft\", \"UIInterfaceOrientationLandscapeRight\"]]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				NSAppTransportSecurity = "[\"NSAllowsLocalNetworking\": true, \"NSAllowsArbitraryLoads\": true]";
+				PRODUCT_BUNDLE_IDENTIFIER = com.studiorelay.app.Clip;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1DD012B0515D4EDB02D648CC /* Build configuration list for PBXProject "StudioRelay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				64BB799B9490A0F0C9AB14CA /* Debug */,
+				03B923788D63B4A50A4C2AB2 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		524078C6FAB48DE2FF1E70F7 /* Build configuration list for PBXNativeTarget "StudioRelay" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5872E1EBDA27582F4202E764 /* Debug */,
+				B2ED75D6AF58534A315AAA17 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A9F0C1C3C3AE9A1E0B3821D8 /* Build configuration list for PBXNativeTarget "StudioRelayClip" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EF363F7F319147CB304C5D4D /* Debug */,
+				0055A80CA7D42ECBDD01B9B6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 28DC3267FFEE42856E7606AA /* Project object */;
+}

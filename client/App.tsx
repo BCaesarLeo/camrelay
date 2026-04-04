@@ -12,22 +12,28 @@ import { HostView } from "./components/HostView";
 export function App() {
   const screen = useStore((s) => s.screen);
   const loadConfig = useStore((s) => s.loadConfig);
-  const [isHost, setIsHost] = useState(false);
+  const [mode, setMode] = useState<"guest" | "host" | "kiosk">("guest");
 
   useWebSocket();
 
   useEffect(() => {
     loadConfig();
-    setIsHost(window.location.pathname === "/host");
+    const path = window.location.pathname;
+    if (path === "/host") setMode("host");
+    else if (path === "/kiosk") setMode("kiosk");
+    else setMode("guest");
   }, []);
 
-  if (isHost) {
+  if (mode === "host") {
     return <HostView />;
   }
 
+  // Kiosk mode: same flow but no "+" button on sessions list (photographer manages from /host)
+  // The QR screen auto-resets after countdown
+
   return (
     <AnimatePresence mode="wait">
-      {screen === "sessions" && <SessionsList key="sessions" />}
+      {screen === "sessions" && <SessionsList key="sessions" kiosk={mode === "kiosk"} />}
       {screen === "session" && <SessionView key="session" />}
       {screen === "review" && <ReviewScreen key="review" />}
       {screen === "contact" && <ContactForm key="contact" />}

@@ -1,0 +1,7 @@
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/RemoteCli.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/edit_cache.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/rebuild_cache.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/list_install_components.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/install.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/install/local.dir
+/Users/ssmacpro/dev/cam/native/sony-sdk/build/CMakeFiles/install/strip.dir

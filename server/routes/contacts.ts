@@ -2,18 +2,20 @@ import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { db } from "../db.js";
 import { getActiveEventId } from "./events.js";
+import {
+  sendSMS,
+  isOnline,
+  getDeliveryStatus,
+  markLocalDownload,
+} from "../delivery/index.js";
 
 const insertContact = db.prepare(`
   INSERT INTO contacts (id, session_id, event_id, name, email, phone, selected_photo_ids, download_token)
   VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
-const getContactsForEvent = db.prepare(`
-  SELECT * FROM contacts WHERE event_id = ? ORDER BY created_at DESC
-`);
-
 export async function contactRoutes(app: FastifyInstance) {
-  // Save contact info and generate download link
+  // Save contact info, trigger SMS if online
   app.post<{
     Body: {
       sessionId: string;
@@ -40,24 +42,46 @@ export async function contactRoutes(app: FastifyInstance) {
       downloadToken
     );
 
+    // Fire-and-forget SMS if internet is available and phone provided
+    if (phone && isOnline()) {
+      sendSMS(id, phone, name, downloadToken, selectedPhotoIds.length).catch(
+        () => {}
+      );
+    }
+
     return { id, name, email, phone };
   });
 
-  // List contacts for current event (admin)
-  app.get("/api/contacts", async () => {
-    const eventId = getActiveEventId();
-    if (!eventId) return [];
-    const rows = getContactsForEvent.all(eventId) as any[];
-    return rows.map((r) => ({
-      id: r.id,
-      sessionId: r.session_id,
-      name: r.name,
-      email: r.email,
-      phone: r.phone,
-      selectedPhotoIds: JSON.parse(r.selected_photo_ids || "[]"),
-      downloadToken: r.download_token,
-      createdAt: r.created_at,
-      synced: r.synced === 1,
-    }));
+  // Delivery status for admin panel
+  app.get("/api/delivery", async () => {
+    return {
+      online: isOnline(),
+      contacts: getDeliveryStatus(),
+    };
   });
+
+  // Retry SMS for a specific contact
+  app.post<{ Params: { id: string } }>(
+    "/api/delivery/:id/retry-sms",
+    async (req, reply) => {
+      const contact = db
+        .prepare("SELECT * FROM contacts WHERE id = ?")
+        .get(req.params.id) as any;
+      if (!contact)
+        return reply.status(404).send({ error: "Contact not found" });
+      if (!contact.phone)
+        return reply.status(400).send({ error: "No phone number" });
+
+      const photoIds = JSON.parse(contact.selected_photo_ids || "[]");
+      const success = await sendSMS(
+        contact.id,
+        contact.phone,
+        contact.name,
+        contact.download_token,
+        photoIds.length
+      );
+
+      return { success };
+    }
+  );
 }
