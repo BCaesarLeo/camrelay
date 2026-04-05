@@ -10,8 +10,8 @@ import type { Photo } from "../../shared/types.js";
 const queue = new PQueue({ concurrency: config.processingConcurrency });
 
 const insertPhoto = db.prepare(`
-  INSERT INTO photos (id, session_id, original_filename, original_path, status)
-  VALUES (?, ?, ?, ?, 'processing')
+  INSERT INTO photos (id, session_id, original_filename, original_path, status, selected)
+  VALUES (?, ?, ?, ?, 'processing', 1)
 `);
 
 const updatePhotoReady = db.prepare(`
@@ -60,6 +60,8 @@ export function enqueuePhoto(filePath: string) {
   // Insert photo record immediately
   insertPhoto.run(photoId, sessionId, filename, filePath);
   incrementPhotoCount.run(sessionId);
+  // All photos start selected
+  db.prepare("UPDATE sessions SET selected_count = selected_count + 1 WHERE id = ?").run(sessionId);
 
   // Broadcast processing state
   broadcast(sessionId, {
@@ -93,7 +95,7 @@ export function enqueuePhoto(filePath: string) {
         thumbnailUrl: `/storage/sessions/${sessionFolder}/thumb/${photoId}.jpg`,
         fullUrl: `/storage/sessions/${sessionFolder}/full/${photoId}.jpg`,
         status: "ready",
-        selected: false,
+        selected: true,
         width: result.width,
         height: result.height,
         createdAt: new Date().toISOString(),

@@ -1,7 +1,8 @@
 import { nativeCapture } from "./native.js";
+import { nikonCapture } from "./gphoto-nikon.js";
 import { watchCapture } from "./watch.js";
 
-export type CaptureMode = "direct" | "watch";
+export type CaptureMode = "sony" | "nikon" | "watch";
 
 export interface CaptureStatus {
   mode: CaptureMode;
@@ -32,8 +33,14 @@ export async function startCapture(mode: CaptureMode): Promise<CaptureStatus> {
   await stopCapture();
   currentMode = mode;
 
-  if (mode === "direct") {
+  if (mode === "sony") {
+    // Sony SDK native tether — also start watch mode for the capture folder
+    await watchCapture.start();
     return nativeCapture.start();
+  } else if (mode === "nikon") {
+    // gphoto2 tether — watch mode picks up files from the same folder
+    await watchCapture.start();
+    return nikonCapture.start();
   } else {
     return watchCapture.start();
   }
@@ -41,12 +48,15 @@ export async function startCapture(mode: CaptureMode): Promise<CaptureStatus> {
 
 export async function stopCapture(): Promise<void> {
   await nativeCapture.stop();
+  await nikonCapture.stop();
   await watchCapture.stop();
 }
 
 export function getCaptureStatus(): CaptureStatus {
-  if (currentMode === "direct") {
+  if (currentMode === "sony") {
     return nativeCapture.getStatus();
+  } else if (currentMode === "nikon") {
+    return nikonCapture.getStatus();
   } else {
     return watchCapture.getStatus();
   }

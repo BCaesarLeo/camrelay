@@ -68,14 +68,21 @@ export async function convertPhoto(
       "--out",
       fullPath,
     ]);
+    // Auto-rotate based on EXIF orientation (sips doesn't rotate pixels)
+    await sharp(fullPath)
+      .rotate() // auto-rotate from EXIF
+      .jpeg({ quality: config.jpegQuality, progressive: true })
+      .toFile(fullPath + ".tmp");
+    await fs.rename(fullPath + ".tmp", fullPath);
   } else {
-    // For JPEG/TIFF input, optimize with sharp directly
+    // For JPEG/TIFF input, auto-rotate and optimize
     await sharp(inputPath)
+      .rotate() // auto-rotate from EXIF
       .jpeg({ quality: config.jpegQuality, progressive: true, mozjpeg: true })
       .toFile(fullPath);
   }
 
-  // Generate thumbnail from the full-res JPEG
+  // Generate thumbnail from the full-res JPEG (already rotated)
   const thumbInfo = await sharp(fullPath)
     .resize(config.thumbWidth, null, { withoutEnlargement: true })
     .jpeg({ quality: 80, progressive: true })

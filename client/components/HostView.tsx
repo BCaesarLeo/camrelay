@@ -4,7 +4,7 @@ import { useStore } from "../hooks/useStore";
 import type { Event } from "../../shared/types";
 
 interface CaptureStatus {
-  mode: "direct" | "watch";
+  mode: "sony" | "nikon" | "watch";
   active: boolean;
   cameraDetected: boolean;
   cameraName: string | null;
@@ -66,7 +66,7 @@ export function HostView() {
     loadConfig();
   };
 
-  const handleSwitchMode = async (mode: "direct" | "watch") => {
+  const handleSwitchMode = async (mode: "sony" | "nikon" | "watch") => {
     setSwitching(true);
     try {
       const res = await fetch("/api/capture/start", {
@@ -167,15 +167,26 @@ export function HostView() {
         <p style={styles.sectionLabel}>Capture</p>
         <div style={styles.modeSelector}>
           <button
-            onClick={() => handleSwitchMode("direct")}
+            onClick={() => handleSwitchMode("sony")}
             disabled={switching}
             style={{
               ...styles.modeBtn,
-              ...(capture?.mode === "direct" ? styles.modeBtnActive : {}),
+              ...(capture?.mode === "sony" ? styles.modeBtnActive : {}),
             }}
           >
-            <span style={styles.modeBtnTitle}>Direct</span>
-            <span style={styles.modeBtnDesc}>gphoto2 tethered</span>
+            <span style={styles.modeBtnTitle}>Sony</span>
+            <span style={styles.modeBtnDesc}>SDK tether</span>
+          </button>
+          <button
+            onClick={() => handleSwitchMode("nikon")}
+            disabled={switching}
+            style={{
+              ...styles.modeBtn,
+              ...(capture?.mode === "nikon" ? styles.modeBtnActive : {}),
+            }}
+          >
+            <span style={styles.modeBtnTitle}>Nikon</span>
+            <span style={styles.modeBtnDesc}>gphoto2 tether</span>
           </button>
           <button
             onClick={() => handleSwitchMode("watch")}

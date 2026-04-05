@@ -129,7 +129,7 @@ export const nativeCapture = {
 
   getStatus(): CaptureStatus {
     return {
-      mode: "direct",
+      mode: "sony",
       active,
       cameraDetected,
       cameraName,

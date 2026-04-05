@@ -105,40 +105,9 @@ export function markLocalDownload(token: string) {
   ).run(token);
 }
 
-// Retry failed SMS deliveries when internet comes back
+// SMS retry disabled — cloud.ts handles MMS with actual photos after S3 upload
 async function retryFailedDeliveries() {
-  if (!internetAvailable) return;
-
-  const pending = db
-    .prepare(
-      `SELECT c.*, dt.download_count
-       FROM contacts c
-       LEFT JOIN download_tokens dt ON c.download_token = dt.token
-       WHERE c.phone IS NOT NULL
-         AND c.phone != ''
-         AND c.sms_sent = 0
-         AND (c.sms_error IS NOT NULL OR c.sms_error IS NULL)
-       ORDER BY c.created_at ASC
-       LIMIT 10`
-    )
-    .all() as any[];
-
-  if (pending.length === 0) return;
-
-  console.log(`[delivery] Retrying ${pending.length} pending SMS deliveries...`);
-
-  for (const contact of pending) {
-    const photoIds = JSON.parse(contact.selected_photo_ids || "[]");
-    await sendSMS(
-      contact.id,
-      contact.phone,
-      contact.name,
-      contact.download_token,
-      photoIds.length
-    );
-    // Small delay between sends
-    await new Promise((r) => setTimeout(r, 1000));
-  }
+  return;
 }
 
 // Get delivery status for all contacts in current event

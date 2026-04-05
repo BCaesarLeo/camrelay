@@ -35,6 +35,8 @@ const getTokenByToken = db.prepare(`
 `);
 
 function getLanIp(): string {
+  // Use configured IP if set (for multi-network setups)
+  if (process.env.LAN_IP) return process.env.LAN_IP;
   const interfaces = os.networkInterfaces();
   for (const iface of Object.values(interfaces)) {
     if (!iface) continue;
