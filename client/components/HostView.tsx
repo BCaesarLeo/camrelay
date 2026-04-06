@@ -162,6 +162,39 @@ export function HostView() {
         )}
       </div>
 
+      {/* Delivery Mode */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>Delivery</p>
+        <div style={styles.modeSelector}>
+          <button
+            onClick={() => {
+              const { setDeliveryMode } = useStore.getState();
+              setDeliveryMode("online");
+            }}
+            style={{
+              ...styles.modeBtn,
+              ...(useStore.getState().deliveryMode === "online" ? styles.modeBtnActive : {}),
+            }}
+          >
+            <span style={styles.modeBtnTitle}>Online</span>
+            <span style={styles.modeBtnDesc}>Email + MMS</span>
+          </button>
+          <button
+            onClick={() => {
+              const { setDeliveryMode } = useStore.getState();
+              setDeliveryMode("local");
+            }}
+            style={{
+              ...styles.modeBtn,
+              ...(useStore.getState().deliveryMode === "local" ? styles.modeBtnActive : {}),
+            }}
+          >
+            <span style={styles.modeBtnTitle}>Local</span>
+            <span style={styles.modeBtnDesc}>QR code download</span>
+          </button>
+        </div>
+      </div>
+
       {/* Capture Mode */}
       <div style={styles.section}>
         <p style={styles.sectionLabel}>Capture</p>
@@ -244,7 +277,19 @@ export function HostView() {
               </span>
               <span style={styles.sessionTime}>{formatTime(s.createdAt)}</span>
               <span style={styles.sessionPhotos}>{s.photoCount} photos</span>
-              {s.status === "active" && <span style={styles.sessionLive}>Live</span>}
+              {s.status === "active" ? (
+                <span style={styles.sessionLive}>Live</span>
+              ) : (
+                <button
+                  onClick={async () => {
+                    await fetch(`/api/sessions/${s.id}/reactivate`, { method: "POST" });
+                    loadSessions();
+                  }}
+                  style={styles.reactivateBtn}
+                >
+                  Reactivate
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -311,4 +356,5 @@ const styles: Record<string, React.CSSProperties> = {
   sessionTime: { fontSize: 12, color: "#555", fontWeight: 300 },
   sessionPhotos: { marginLeft: "auto", fontSize: 12, color: "#444", fontWeight: 300 },
   sessionLive: { fontSize: 10, color: "#2dd4a8", letterSpacing: "0.06em", textTransform: "uppercase" as const },
+  reactivateBtn: { fontSize: 10, color: "#888", letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "none", border: "1px solid #333", padding: "3px 8px", fontFamily: "inherit", cursor: "pointer" },
 };

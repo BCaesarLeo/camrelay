@@ -150,7 +150,23 @@ export async function sessionRoutes(app: FastifyInstance) {
     }
   );
 
-  // Complete session
+  // Reactivate a session (make it the active one again)
+  app.post<{ Params: { id: string } }>(
+    "/api/sessions/:id/reactivate",
+    async (req, reply) => {
+      const row = getSession.get(req.params.id) as any;
+      if (!row) return reply.status(404).send({ error: "Session not found" });
+
+      deactivateAll.run();
+      db.prepare("UPDATE sessions SET status = 'active' WHERE id = ?").run(req.params.id);
+
+      const updated = getSession.get(req.params.id);
+      return rowToSession(updated);
+    }
+  );
+
+  // Complete session — only updates selected count, does NOT change status
+  // so the active session stays active for continued capture
   app.patch<{ Params: { id: string } }>(
     "/api/sessions/:id/complete",
     async (req, reply) => {
@@ -165,8 +181,7 @@ export async function sessionRoutes(app: FastifyInstance) {
         req.params.id
       );
 
-      completeSession.run(req.params.id);
-
+      // Don't change status — session stays active so photos keep flowing
       const updated = getSession.get(req.params.id);
       return rowToSession(updated);
     }

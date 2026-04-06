@@ -9,16 +9,18 @@ export function ContactForm() {
   const setScreen = useStore((s) => s.setScreen);
   const completeSession = useStore((s) => s.completeSession);
   const generateDownloadLink = useStore((s) => s.generateDownloadLink);
-  const downloadInfo = useStore((s) => s.downloadInfo);
   const eventName = useStore((s) => s.eventName);
+  const deliveryMode = useStore((s) => s.deliveryMode);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
   const selected = photos.filter((p) => p.selected && p.status === "ready");
+  const isOnline = deliveryMode === "online";
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -39,7 +41,7 @@ export function ContactForm() {
       await generateDownloadLink();
 
       const info = useStore.getState().downloadInfo;
-      const token = info?.downloadUrl.split("/dl/")[1] || "";
+      const token = info?.downloadUrl.split("/dl/")[1]?.split("?")[0] || "";
 
       await api.saveContact({
         sessionId: session.id,
@@ -50,13 +52,68 @@ export function ContactForm() {
         selectedPhotoIds: selected.map((p) => p.id),
       });
 
-      setScreen("qr");
+      if (isOnline) {
+        // Online mode — show success, cloud sync sends email + MMS
+        setSent(true);
+        setLoading(false);
+      } else {
+        // Local mode — go to QR screen
+        setScreen("qr");
+      }
     } catch (err) {
       console.error("Contact form error:", err);
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
   };
+
+  // Success screen for online delivery
+  if (sent) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        style={styles.container}
+      >
+        <div style={{ ...styles.content, textAlign: "center" as const }}>
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", damping: 15 }}
+          >
+            <div style={styles.successIcon}>
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#2dd4a8" strokeWidth="1.5">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </motion.div>
+
+          <h1 style={styles.title}>We'll send your photos!</h1>
+          <p style={styles.subtitle}>
+            {selected.length} {selected.length === 1 ? "photo" : "photos"} will be sent to{" "}
+            {email && phone ? `${email} and ${phone}` : email || phone}
+          </p>
+          <p style={{ ...styles.subtitle, color: "#333" }}>
+            Thank you for visiting {eventName}
+          </p>
+
+          <motion.button
+            onClick={() => {
+              setName("");
+              setEmail("");
+              setPhone("");
+              setSent(false);
+              useStore.getState().backToSessions();
+            }}
+            style={styles.doneBtn}
+            whileTap={{ scale: 0.97 }}
+          >
+            Done
+          </motion.button>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
@@ -78,8 +135,9 @@ export function ContactForm() {
 
         <h1 style={styles.title}>Get your photos</h1>
         <p style={styles.subtitle}>
-          Enter your info so we can send you {selected.length}{" "}
-          {selected.length === 1 ? "photo" : "photos"}
+          {isOnline
+            ? `Enter your info and we'll send you ${selected.length} ${selected.length === 1 ? "photo" : "photos"}`
+            : `Enter your info to get ${selected.length} ${selected.length === 1 ? "photo" : "photos"}`}
         </p>
 
         <div style={styles.form}>
@@ -117,7 +175,7 @@ export function ContactForm() {
             }}
             whileTap={!loading ? { scale: 0.98 } : undefined}
           >
-            {loading ? "Preparing..." : "Get my QR code"}
+            {loading ? "Preparing..." : isOnline ? "Send files" : "Get QR code"}
           </motion.button>
         </div>
       </div>
@@ -207,6 +265,28 @@ const styles: Record<string, React.CSSProperties> = {
     textTransform: "uppercase" as const,
     color: "#fff",
     background: "#4353FF",
+    border: "none",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  successIcon: {
+    width: 100,
+    height: 100,
+    borderRadius: "50%",
+    background: "rgba(45, 212, 168, 0.1)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0 auto 32px",
+  },
+  doneBtn: {
+    padding: "16px 64px",
+    fontSize: 15,
+    fontWeight: 400,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase" as const,
+    color: "#fff",
+    background: "#2dd4a8",
     border: "none",
     fontFamily: "inherit",
     cursor: "pointer",

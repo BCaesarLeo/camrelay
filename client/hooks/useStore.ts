@@ -14,6 +14,8 @@ interface Store {
   autoResetSeconds: number;
   wifiNetwork: string | null;
   wifiPassword: string | null;
+  deliveryMode: "online" | "local";
+  setDeliveryMode: (mode: "online" | "local") => void;
   loadConfig: () => Promise<void>;
 
   // Sessions list
@@ -51,6 +53,8 @@ export const useStore = create<Store>((set, get) => ({
   autoResetSeconds: 60,
   wifiNetwork: null,
   wifiPassword: null,
+  deliveryMode: "online",
+  setDeliveryMode: (mode) => set({ deliveryMode: mode }),
   loadConfig: async () => {
     try {
       const cfg = await api.getConfig();
