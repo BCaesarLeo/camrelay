@@ -9,6 +9,7 @@ export function SessionView() {
   const setScreen = useStore((s) => s.setScreen);
   const backToSessions = useStore((s) => s.backToSessions);
   const loadPhotos = useStore((s) => s.loadPhotos);
+  const openRegroup = useStore((s) => s.openRegroup);
   const [activeIndex, setActiveIndex] = useState(0);
   const stripRef = useRef<HTMLDivElement>(null);
   const prevPhotoCount = useRef(0);
@@ -25,6 +26,9 @@ export function SessionView() {
   useEffect(() => {
     if (readyPhotos.length > prevPhotoCount.current && readyPhotos.length > 0) {
       setActiveIndex(readyPhotos.length - 1);
+    } else if (activeIndex > readyPhotos.length - 1) {
+      // Photos were regrouped out of this session
+      setActiveIndex(Math.max(0, readyPhotos.length - 1));
     }
     prevPhotoCount.current = readyPhotos.length;
   }, [readyPhotos.length]);
@@ -147,6 +151,15 @@ export function SessionView() {
                   </svg>
                 )}
               </motion.div>
+
+              {/* Not us — bottom left on the image */}
+              <motion.button
+                style={styles.notUsBtn}
+                onClick={() => openRegroup([activePhoto.id])}
+                whileTap={{ scale: 0.95 }}
+              >
+                Not us?
+              </motion.button>
             </div>
 
             {/* Nav arrows */}
@@ -294,6 +307,20 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     cursor: "pointer",
     transition: "all 0.3s ease",
+  },
+  notUsBtn: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    height: 44,
+    padding: "0 18px",
+    background: "rgba(0, 0, 0, 0.6)",
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 13,
+    fontWeight: 400,
+    letterSpacing: "0.06em",
+    fontFamily: "inherit",
+    cursor: "pointer",
   },
   arrow: {
     position: "absolute",

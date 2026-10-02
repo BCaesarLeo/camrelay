@@ -9,7 +9,8 @@ export function QRScreen() {
   const autoResetSeconds = useStore((s) => s.autoResetSeconds);
   const eventName = useStore((s) => s.eventName);
   const wifiNetwork = useStore((s) => s.wifiNetwork);
-  const reset = useStore((s) => s.backToSessions);
+  const reset = useStore((s) => s.finishGuest);
+  const sendAnotherSession = useStore((s) => s.sendAnotherSession);
 
   const [phase, setPhase] = useState<Phase>("scan");
   const [resetCountdown, setResetCountdown] = useState(15);
@@ -211,6 +212,13 @@ export function QRScreen() {
 
         <div style={styles.footer}>
           <motion.button
+            onClick={sendAnotherSession}
+            style={styles.anotherBtn}
+            whileTap={{ scale: 0.97 }}
+          >
+            Get another session
+          </motion.button>
+          <motion.button
             onClick={() => setPhase("success")}
             style={styles.doneBtn}
             whileTap={{ scale: 0.97 }}
@@ -308,6 +316,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   footer: {
     marginTop: 24,
+    display: "flex",
+    justifyContent: "center",
+    gap: 12,
+  },
+  anotherBtn: {
+    padding: "16px 32px",
+    fontSize: 15,
+    fontWeight: 400,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase" as const,
+    color: "#2dd4a8",
+    background: "transparent",
+    border: "1px solid rgba(45, 212, 168, 0.4)",
+    fontFamily: "inherit",
+    cursor: "pointer",
   },
   doneBtn: {
     padding: "16px 64px",

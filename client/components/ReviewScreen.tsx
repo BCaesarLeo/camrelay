@@ -5,6 +5,7 @@ export function ReviewScreen() {
   const photos = useStore((s) => s.photos);
   const toggleSelect = useStore((s) => s.toggleSelect);
   const setScreen = useStore((s) => s.setScreen);
+  const openRegroup = useStore((s) => s.openRegroup);
 
   const selected = photos.filter((p) => p.selected && p.status === "ready");
 
@@ -29,7 +30,9 @@ export function ReviewScreen() {
           Back
         </button>
         <span style={styles.headerLabel}>Review</span>
-        <div style={{ width: 80 }} />
+        <button onClick={() => openRegroup()} style={{ ...styles.backBtn, padding: "10px 18px" }}>
+          Not us?
+        </button>
       </div>
 
       <p style={styles.subtitle}>

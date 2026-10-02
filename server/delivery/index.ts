@@ -110,16 +110,18 @@ async function retryFailedDeliveries() {
   return;
 }
 
-// Get delivery status for all contacts in current event
-export function getDeliveryStatus() {
+// Delivery status for every contact of an event, newest first
+export function getDeliveryStatus(eventId: string | null) {
   const rows = db
     .prepare(
-      `SELECT c.*, dt.download_count
+      `SELECT c.*, dt.download_count, s.session_number
        FROM contacts c
        LEFT JOIN download_tokens dt ON c.download_token = dt.token
+       LEFT JOIN sessions s ON c.session_id = s.id
+       WHERE (? IS NULL OR c.event_id = ?)
        ORDER BY c.created_at DESC`
     )
-    .all() as any[];
+    .all(eventId, eventId) as any[];
 
   return rows.map((r) => ({
     id: r.id,
@@ -127,6 +129,8 @@ export function getDeliveryStatus() {
     email: r.email,
     phone: r.phone,
     sessionId: r.session_id,
+    sessionNumber: r.session_number ?? null,
+    photoCount: JSON.parse(r.selected_photo_ids || "[]").length,
     createdAt: r.created_at,
     localDownload: r.local_download === 1 || (r.download_count ?? 0) > 0,
     smsSent: r.sms_sent === 1,
@@ -134,20 +138,18 @@ export function getDeliveryStatus() {
     emailSent: r.email_sent === 1,
     emailError: r.email_error,
     synced: r.synced === 1,
+    attempts: r.attempts,
+    error: r.delivery_error,
     status: getStatusLabel(r),
   }));
 }
 
-function getStatusLabel(r: any): string {
-  const localDone = r.local_download === 1 || (r.download_count ?? 0) > 0;
-  const smsDone = r.sms_sent === 1;
-
-  if (localDone && smsDone) return "delivered_both";
-  if (localDone) return "delivered_local";
-  if (smsDone) return "delivered_sms";
-  if (r.sms_error) return "sms_failed";
-  if (r.phone) return "pending_sms";
-  return "pending";
+// sent: everything the guest asked for went out · waiting: queued, not tried yet
+// retrying: failed, will try again soon · stuck: failed many times, needs a look
+function getStatusLabel(r: any): "sent" | "waiting" | "retrying" | "stuck" {
+  if (r.synced === 1) return "sent";
+  if (r.attempts === 0) return "waiting";
+  return r.attempts >= 8 ? "stuck" : "retrying";
 }
 
 function getLanIp(): string {

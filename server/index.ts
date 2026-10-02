@@ -15,6 +15,7 @@ import { downloadRoutes } from "./routes/download.js";
 import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
+import { findMeRoutes } from "./routes/findme.js";
 import { startCapture } from "./capture/index.js";
 import { startInternetMonitor } from "./delivery/index.js";
 import { startCloudSync } from "./delivery/cloud.js";
@@ -82,6 +83,7 @@ async function main() {
   await app.register(captureRoutes);
   await app.register(eventRoutes);
   await app.register(contactRoutes);
+  await app.register(findMeRoutes);
 
   // Config endpoint for frontend
   app.get("/api/config", async () => {

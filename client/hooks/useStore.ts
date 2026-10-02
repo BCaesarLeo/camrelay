@@ -2,7 +2,15 @@ import { create } from "zustand";
 import type { Session, Photo, DownloadInfo } from "../../shared/types";
 import { api } from "../lib/api";
 
-type Screen = "sessions" | "session" | "review" | "contact" | "qr";
+type Screen = "sessions" | "session" | "review" | "regroup" | "contact" | "qr" | "findme";
+
+export interface GuestContact {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+export type MoveTarget = { sessionId: string } | { newGroup: true };
 
 interface Store {
   // Navigation
@@ -36,6 +44,20 @@ interface Store {
   loadPhotos: () => Promise<void>;
   toggleSelect: (photoId: string) => Promise<void>;
   selectedPhotos: () => Photo[];
+
+  // Regroup ("Not us")
+  regroupReturn: "session" | "review";
+  regroupPreselect: string[];
+  openRegroup: (preselect?: string[]) => void;
+  movePhotos: (photoIds: string[], target: MoveTarget) => Promise<Session>;
+
+  // Returning guest — contact info kept so they can send another session
+  // without retyping it. Cleared when they tap Done or walk away.
+  guest: GuestContact | null;
+  lastContact: GuestContact | null;
+  rememberContact: (contact: GuestContact) => void;
+  sendAnotherSession: () => void;
+  finishGuest: () => void;
 
   // Download
   downloadInfo: DownloadInfo | null;
@@ -115,7 +137,8 @@ export const useStore = create<Store>((set, get) => ({
     const { session } = get();
     if (!session) return;
     const photos = await api.getPhotos(session.id);
-    set({ photos });
+    // Ignore a slow response for a session the guest has already left
+    if (get().session?.id === session.id) set({ photos });
   },
 
   toggleSelect: async (photoId) => {
@@ -142,6 +165,39 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   selectedPhotos: () => get().photos.filter((p) => p.selected),
+
+  regroupReturn: "session",
+  regroupPreselect: [],
+  openRegroup: (preselect = []) => {
+    const { screen } = get();
+    set({
+      regroupReturn: screen === "review" ? "review" : "session",
+      regroupPreselect: preselect,
+      screen: "regroup",
+    });
+  },
+
+  movePhotos: async (photoIds, target) => {
+    const { target: targetSession } = await api.movePhotos(
+      "newGroup" in target
+        ? { photoIds, newGroup: true }
+        : { photoIds, targetSessionId: target.sessionId }
+    );
+    await Promise.all([get().loadPhotos(), get().loadSessions()]);
+    return targetSession;
+  },
+
+  guest: null,
+  lastContact: null,
+  rememberContact: (contact) => set({ lastContact: contact }),
+  sendAnotherSession: () => {
+    set({ guest: get().lastContact });
+    get().backToSessions();
+  },
+  finishGuest: () => {
+    set({ guest: null, lastContact: null });
+    get().backToSessions();
+  },
 
   downloadInfo: null,
   generateDownloadLink: async () => {

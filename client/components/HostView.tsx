@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useStore } from "../hooks/useStore";
+import { GuestMatcher } from "./GuestMatcher";
+import { DeliveryPanel } from "./DeliveryPanel";
 import type { Event } from "../../shared/types";
 
 interface CaptureStatus {
@@ -24,7 +26,6 @@ export function HostView() {
   const [newEventName, setNewEventName] = useState("");
   const [capture, setCapture] = useState<CaptureStatus | null>(null);
   const [switching, setSwitching] = useState(false);
-
   useEffect(() => {
     loadConfig();
     loadSessions();
@@ -195,6 +196,12 @@ export function HostView() {
         </div>
       </div>
 
+      {/* Delivery queue */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>Sending</p>
+        <DeliveryPanel />
+      </div>
+
       {/* Capture Mode */}
       <div style={styles.section}>
         <p style={styles.sectionLabel}>Capture</p>
@@ -294,6 +301,16 @@ export function HostView() {
           ))}
         </div>
       </div>
+
+      {/* Find my photos */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>Find my photos</p>
+        <p style={styles.importHint}>
+          Guests who tapped &quot;Can&apos;t find your photos?&quot; on the kiosk. Pick out each guest&apos;s
+          photos here and they are sent like any other.
+        </p>
+        <GuestMatcher />
+      </div>
     </div>
   );
 }
@@ -356,5 +373,7 @@ const styles: Record<string, React.CSSProperties> = {
   sessionTime: { fontSize: 12, color: "#555", fontWeight: 300 },
   sessionPhotos: { marginLeft: "auto", fontSize: 12, color: "#444", fontWeight: 300 },
   sessionLive: { fontSize: 10, color: "#2dd4a8", letterSpacing: "0.06em", textTransform: "uppercase" as const },
+  // Find my photos
+  importHint: { fontSize: 13, color: "#555", fontWeight: 300, lineHeight: 1.5, marginBottom: 12 },
   reactivateBtn: { fontSize: 10, color: "#888", letterSpacing: "0.06em", textTransform: "uppercase" as const, background: "none", border: "1px solid #333", padding: "3px 8px", fontFamily: "inherit", cursor: "pointer" },
 };

@@ -51,6 +51,16 @@ export const api = {
       method: "POST",
     }),
 
+  movePhotos: (data: {
+    photoIds: string[];
+    targetSessionId?: string;
+    newGroup?: boolean;
+  }) =>
+    request<{ target: Session; sources: Session[] }>("/api/photos/move", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   getRecentPhoto: () => request<Photo>("/api/photos/recent").catch(() => null),
 
   saveContact: (data: {

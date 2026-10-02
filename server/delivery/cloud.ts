@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 import twilio from "twilio";
+import sharp from "sharp";
 import { db } from "../db.js";
 import { config } from "../config.js";
 import { isOnline } from "./index.js";
@@ -23,9 +24,32 @@ const s3 = new S3Client({ region: "us-east-1" });
 const ses = new SESClient({ region: "us-east-1" });
 
 const BUCKET = "studiorelay-photos";
+const CDN_DOMAIN = "https://d2kzchvzabp5a9.cloudfront.net";
 const FROM_EMAIL = "photos@dcav.pro";
 
 let uploading = false;
+
+// A contact that keeps failing is retried with growing gaps (30s, 1m, 2m … 10m, then
+// hourly) and always after the ones that haven't failed, so one bad address or missing
+// photo can never hold up everyone else. Problems show on the Host page, where staff
+// can fix the address and retry straight away.
+export const STUCK_AFTER_ATTEMPTS = 8;
+const BATCH_SIZE = 10;
+
+function retryDelayMs(attempts: number): number {
+  if (attempts === 0) return 0;
+  if (attempts >= STUCK_AFTER_ATTEMPTS) return 3600 * 1000;
+  return Math.min(600, 30 * 2 ** (attempts - 1)) * 1000;
+}
+
+function sqliteTimeMs(value: string): number {
+  return new Date(value.replace(" ", "T") + "Z").getTime();
+}
+
+const recordFailure = db.prepare(`
+  UPDATE contacts SET attempts = attempts + 1, last_attempt_at = datetime('now'), delivery_error = ?
+  WHERE id = ?
+`);
 
 // Start the background upload + email loop
 export function startCloudSync() {
@@ -34,33 +58,49 @@ export function startCloudSync() {
   console.log("[cloud] Sync started — will upload when internet is available");
 }
 
+// Run the queue right away (used by "Send now" / "Retry" on the Host page)
+export function kickCloudSync() {
+  processQueue();
+}
+
 async function processQueue() {
   if (!isOnline() || uploading) return;
   uploading = true;
 
   try {
-    // Find contacts that haven't been synced yet and have email
+    // Everything not fully delivered yet — by email, by text, or both
     const pending = db
       .prepare(
         `SELECT c.*, e.name as event_name
          FROM contacts c
          LEFT JOIN events e ON c.event_id = e.id
          WHERE c.synced = 0
-           AND c.email IS NOT NULL
-           AND c.email != ''
-         ORDER BY c.created_at ASC
-         LIMIT 5`
+           AND ((c.email IS NOT NULL AND c.email != '') OR (c.phone IS NOT NULL AND c.phone != ''))
+         ORDER BY c.attempts ASC, c.created_at ASC`
       )
       .all() as any[];
 
-    for (const contact of pending) {
-      await processContact(contact);
+    const now = Date.now();
+    const due = pending
+      .filter(
+        (c) => !c.last_attempt_at || now - sqliteTimeMs(c.last_attempt_at) >= retryDelayMs(c.attempts)
+      )
+      .slice(0, BATCH_SIZE);
+
+    for (const contact of due) {
+      try {
+        await processContact(contact);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        recordFailure.run(msg, contact.id);
+        console.error(`[cloud] Delivery failed for ${contact.name}:`, msg);
+      }
     }
   } catch (err) {
     console.error("[cloud] Sync error:", err);
+  } finally {
+    uploading = false;
   }
-
-  uploading = false;
 }
 
 async function processContact(contact: any) {
@@ -70,25 +110,35 @@ async function processContact(contact: any) {
     return;
   }
 
+  const photos = photoIds
+    .map((id) => db.prepare("SELECT * FROM photos WHERE id = ?").get(id) as any)
+    .filter(Boolean);
+
+  // Still converting — not a failure, just check again on the next pass
+  if (photos.some((p) => p.status === "processing")) return;
+
+  // A photo that never converted is left out rather than blocking the rest
+  const usable = photos.filter((p) => p.full_path && fs.existsSync(p.full_path));
+  if (usable.length === 0) {
+    throw new Error("None of the selected photos could be found on disk");
+  }
+
   const eventName = contact.event_name || config.eventName;
   const s3Prefix = `delivery/${contact.event_id}/${contact.id}`;
 
-  console.log(
-    `[cloud] Uploading ${photoIds.length} photos for ${contact.name}...`
-  );
+  console.log(`[cloud] Uploading ${usable.length} photos for ${contact.name}...`);
 
-  // Upload each photo to S3
+  // Upload each photo to S3 (full-res + MMS-sized for Twilio)
   const uploadedUrls: string[] = [];
-  for (const photoId of photoIds) {
-    const photo = db
-      .prepare("SELECT * FROM photos WHERE id = ?")
-      .get(photoId) as any;
-    if (!photo || !photo.full_path) continue;
-
-    const key = `${s3Prefix}/${photoId}.jpg`;
+  const mmsUrls: string[] = [];
+  for (const photo of usable) {
+    const key = `${s3Prefix}/${photo.id}.jpg`;
+    const mmsKey = `mms/${contact.event_id}/${contact.id}/${photo.id}.jpg`;
 
     try {
       const fileBuffer = fs.readFileSync(photo.full_path);
+
+      // Upload full-res for email/download
       await s3.send(
         new PutObjectCommand({
           Bucket: BUCKET,
@@ -97,97 +147,104 @@ async function processContact(contact: any) {
           ContentType: "image/jpeg",
         })
       );
-      uploadedUrls.push(
-        `https://${BUCKET}.s3.amazonaws.com/${key}`
+      uploadedUrls.push(`${CDN_DOMAIN}/${key}`);
+
+      // Generate MMS-sized version (1600px, under 5MB for Twilio)
+      const mmsBuffer = await sharp(fileBuffer)
+        .rotate()
+        .resize(1600, null, { withoutEnlargement: true })
+        .jpeg({ quality: 80 })
+        .toBuffer();
+
+      await s3.send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: mmsKey,
+          Body: mmsBuffer,
+          ContentType: "image/jpeg",
+        })
       );
+      mmsUrls.push(`${CDN_DOMAIN}/${mmsKey}`);
     } catch (err) {
-      console.error(`[cloud] Failed to upload ${photoId}:`, err);
-      return; // Stop — don't send email if not all uploaded
+      // Don't send a link until every photo behind it is uploaded
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Upload failed: ${msg}`);
     }
   }
 
-  if (uploadedUrls.length !== photoIds.length) {
-    console.log(`[cloud] Only ${uploadedUrls.length}/${photoIds.length} uploaded for ${contact.name}, skipping email`);
-    return;
-  }
-
-  // All uploaded — generate download page and send email
+  // All uploaded — generate the download page
+  const downloadPageKey = `${s3Prefix}/index.html`;
   try {
-    // Create a simple HTML download page on S3
-    const downloadPageKey = `${s3Prefix}/index.html`;
-    const downloadPage = generateDownloadPage(
-      eventName,
-      contact.name,
-      uploadedUrls
-    );
-
     await s3.send(
       new PutObjectCommand({
         Bucket: BUCKET,
         Key: downloadPageKey,
-        Body: downloadPage,
+        Body: generateDownloadPage(eventName, contact.name, uploadedUrls),
         ContentType: "text/html",
       })
     );
-
-    const downloadUrl = `https://${BUCKET}.s3.amazonaws.com/${downloadPageKey}`;
-
-    // Send email
-    if (contact.email) {
-      await sendEmail(contact.email, contact.name, eventName, downloadUrl, photoIds.length);
-    }
-
-    // Send SMS with permanent S3 download link via Twilio
-    if (contact.phone) {
-      try {
-        let cleanPhone = contact.phone.replace(/[^+\d]/g, "");
-        if (!cleanPhone.startsWith("+")) cleanPhone = "+1" + cleanPhone;
-
-        const client = getTwilio();
-        const msgSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
-        if (client && msgSid) {
-          // Send MMS with actual photos (max 10 per message, batch if more)
-          for (let batch = 0; batch < uploadedUrls.length; batch += 10) {
-            const mediaUrls = uploadedUrls.slice(batch, batch + 10);
-            const isFirst = batch === 0;
-
-            await client.messages.create({
-              body: isFirst
-                ? `${eventName}: Hi ${contact.name}! Here ${photoIds.length !== 1 ? "are" : "is"} your ${photoIds.length} photo${photoIds.length !== 1 ? "s" : ""} from the event.`
-                : `${contact.name} — photos continued (${batch + 1}-${Math.min(batch + 10, uploadedUrls.length)} of ${uploadedUrls.length})`,
-              messagingServiceSid: msgSid,
-              to: cleanPhone,
-              mediaUrl: mediaUrls,
-            });
-
-            if (batch + 10 < uploadedUrls.length) {
-              await new Promise((r) => setTimeout(r, 1000));
-            }
-          }
-          db.prepare("UPDATE contacts SET sms_sent = 1, sms_error = NULL WHERE id = ?").run(contact.id);
-          console.log(`[cloud] SMS sent to ${cleanPhone} for ${contact.name}`);
-        }
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        db.prepare("UPDATE contacts SET sms_error = ? WHERE id = ?").run(errMsg, contact.id);
-        console.error(`[cloud] SMS failed for ${contact.name}:`, errMsg);
-      }
-    }
-
-    // Mark as synced
-    db.prepare(
-      "UPDATE contacts SET synced = 1, email_sent = 1, email_error = NULL WHERE id = ?"
-    ).run(contact.id);
-
-    console.log(`[cloud] Delivered to ${contact.name} (email: ${!!contact.email}, sms: ${!!contact.phone})`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    db.prepare("UPDATE contacts SET email_error = ? WHERE id = ?").run(
-      msg,
-      contact.id
-    );
-    console.error(`[cloud] Email failed for ${contact.name}:`, msg);
+    throw new Error(`Upload failed: ${msg}`);
   }
+  const downloadUrl = `${CDN_DOMAIN}/${downloadPageKey}`;
+  const count = usable.length;
+  const problems: string[] = [];
+
+  // Email — skipped if an earlier attempt already got it out
+  if (contact.email && !contact.email_sent) {
+    try {
+      await sendEmail(contact.email, contact.name, eventName, downloadUrl, count);
+      db.prepare("UPDATE contacts SET email_sent = 1, email_error = NULL WHERE id = ?").run(contact.id);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      db.prepare("UPDATE contacts SET email_error = ? WHERE id = ?").run(msg, contact.id);
+      problems.push(`Email: ${msg}`);
+    }
+  }
+
+  // Text with permanent S3 download link via Twilio — same rule, never sent twice
+  if (contact.phone && !contact.sms_sent) {
+    try {
+      let cleanPhone = contact.phone.replace(/[^+\d]/g, "");
+      if (!cleanPhone.startsWith("+")) cleanPhone = "+1" + cleanPhone;
+
+      const client = getTwilio();
+      const msgSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      if (!client || !msgSid) throw new Error("Twilio is not configured");
+
+      // Send MMS with MMS-sized photos (max 10 per message, batch if more)
+      for (let batch = 0; batch < mmsUrls.length; batch += 10) {
+        const mediaUrls = mmsUrls.slice(batch, batch + 10);
+        const isFirst = batch === 0;
+
+        await client.messages.create({
+          body: isFirst
+            ? `${eventName}: Hi ${contact.name}! Here ${count !== 1 ? "are" : "is"} your ${count} photo${count !== 1 ? "s" : ""} from the event.\n\nDownload full-resolution: ${downloadUrl}`
+            : `Photos continued (${batch + 1}-${Math.min(batch + 10, mmsUrls.length)} of ${mmsUrls.length})`,
+          messagingServiceSid: msgSid,
+          to: cleanPhone,
+          mediaUrl: mediaUrls,
+        });
+
+        if (batch + 10 < mmsUrls.length) {
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+      db.prepare("UPDATE contacts SET sms_sent = 1, sms_error = NULL WHERE id = ?").run(contact.id);
+      console.log(`[cloud] SMS sent to ${cleanPhone} for ${contact.name}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      db.prepare("UPDATE contacts SET sms_error = ? WHERE id = ?").run(msg, contact.id);
+      problems.push(`Text: ${msg}`);
+    }
+  }
+
+  // Done only when every channel the guest asked for has gone out
+  if (problems.length > 0) throw new Error(problems.join(" · "));
+
+  db.prepare("UPDATE contacts SET synced = 1, delivery_error = NULL WHERE id = ?").run(contact.id);
+  console.log(`[cloud] Delivered to ${contact.name} (email: ${!!contact.email}, sms: ${!!contact.phone})`);
 }
 
 async function sendEmail(

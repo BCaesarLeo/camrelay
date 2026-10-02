@@ -38,8 +38,11 @@ const getActiveSession = db.prepare(`
   SELECT * FROM sessions WHERE status = 'active' ORDER BY created_at DESC LIMIT 1
 `);
 
+// A split group that was emptied again (e.g. "Not us" undone) is hidden rather than deleted
 const getSessionsForEvent = db.prepare(`
-  SELECT * FROM sessions WHERE event_id = ? ORDER BY created_at DESC
+  SELECT * FROM sessions
+  WHERE event_id = ? AND NOT (split_from IS NOT NULL AND photo_count = 0)
+  ORDER BY created_at DESC
 `);
 
 const completeSession = db.prepare(`
@@ -66,6 +69,53 @@ function pathToUrl(diskPath: string): string {
   return `/storage/photos/${parts.slice(-2).join("/")}`;
 }
 
+const createDetached = db.prepare(`
+  INSERT INTO sessions (id, event_id, short_code, name, session_number, color, status, split_from, created_at)
+  VALUES (?, ?, ?, ?, ?, ?, 'expired', ?, COALESCE(?, datetime('now')))
+`);
+
+const recount = db.prepare(`
+  UPDATE sessions SET
+    photo_count = (SELECT COUNT(*) FROM photos WHERE session_id = sessions.id),
+    selected_count = (SELECT COUNT(*) FROM photos WHERE session_id = sessions.id AND selected = 1)
+  WHERE id = ?
+`);
+
+// Create a session that does NOT become the live capture session — used when
+// photos are regrouped or imported, so the camera keeps feeding the active one.
+export function createDetachedSession(
+  eventId: string,
+  opts: { name?: string | null; splitFrom?: number | null; createdAt?: string | null } = {}
+): string {
+  const id = nanoid();
+  const shortCode = nanoid(6).toUpperCase();
+  const { max_num } = getMaxSessionNumberForEvent.get(eventId) as { max_num: number };
+  const sessionNumber = max_num + 1;
+  const color = SESSION_COLORS[(sessionNumber - 1) % SESSION_COLORS.length];
+
+  createDetached.run(
+    id,
+    eventId,
+    shortCode,
+    opts.name ?? null,
+    sessionNumber,
+    color,
+    opts.splitFrom ?? null,
+    opts.createdAt ?? null
+  );
+  incrementEventSessionCount.run(eventId);
+  return id;
+}
+
+export function recountSession(sessionId: string) {
+  recount.run(sessionId);
+}
+
+export function getSessionById(sessionId: string): Session | null {
+  const row = getSession.get(sessionId);
+  return row ? rowToSession(row) : null;
+}
+
 function rowToSession(row: any): Session {
   const cover = getSessionCover.get(row.id) as { id: string; thumb_path: string } | undefined;
   return {
@@ -81,6 +131,7 @@ function rowToSession(row: any): Session {
     photoCount: row.photo_count,
     selectedCount: row.selected_count,
     coverUrl: cover ? pathToUrl(cover.thumb_path) : null,
+    splitFrom: row.split_from ?? null,
   };
 }
 

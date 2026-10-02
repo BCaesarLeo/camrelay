@@ -1,6 +1,11 @@
 import type { FastifyInstance } from "fastify";
 import { db } from "../db.js";
 import { broadcast } from "../ws/index.js";
+import {
+  createDetachedSession,
+  recountSession,
+  getSessionById,
+} from "./sessions.js";
 import type { Photo } from "../../shared/types.js";
 
 const getPhotos = db.prepare(`
@@ -90,4 +95,72 @@ export async function photoRoutes(app: FastifyInstance) {
       return photo;
     }
   );
+
+  // Regroup ("Not us") — move photos to another session, or split them into a new group.
+  // Delivery is keyed on photo ids, so moving a photo never affects what was already sent.
+  app.post<{
+    Body: { photoIds: string[]; targetSessionId?: string; newGroup?: boolean };
+  }>("/api/photos/move", async (req, reply) => {
+    const { photoIds, targetSessionId, newGroup } = req.body ?? ({} as any);
+    if (
+      !Array.isArray(photoIds) ||
+      photoIds.length === 0 ||
+      photoIds.length > 500 ||
+      !photoIds.every((id) => typeof id === "string")
+    ) {
+      return reply.status(400).send({ error: "photoIds required" });
+    }
+    if (!targetSessionId && !newGroup) {
+      return reply.status(400).send({ error: "targetSessionId or newGroup required" });
+    }
+
+    const ids = [...new Set(photoIds)];
+    const rows = db
+      .prepare(
+        `SELECT p.id, p.session_id, p.created_at, s.event_id, s.session_number
+         FROM photos p JOIN sessions s ON p.session_id = s.id
+         WHERE p.id IN (${ids.map(() => "?").join(",")})
+         ORDER BY p.created_at ASC`
+      )
+      .all(...ids) as {
+      id: string;
+      session_id: string;
+      created_at: string;
+      event_id: string;
+      session_number: number;
+    }[];
+    if (rows.length !== ids.length) {
+      return reply.status(404).send({ error: "Photo not found" });
+    }
+    if (targetSessionId && !getSessionById(targetSessionId)) {
+      return reply.status(404).send({ error: "Session not found" });
+    }
+
+    const sourceIds = [...new Set(rows.map((r) => r.session_id))];
+    let targetId = targetSessionId ?? "";
+
+    db.transaction(() => {
+      if (!targetSessionId) {
+        // Dated at its earliest photo so the new group sorts next to the one it came from
+        targetId = createDetachedSession(rows[0].event_id, {
+          splitFrom: rows[0].session_number,
+          createdAt: rows[0].created_at,
+        });
+      }
+      const move = db.prepare("UPDATE photos SET session_id = ? WHERE id = ?");
+      for (const r of rows) {
+        if (r.session_id !== targetId) move.run(targetId, r.id);
+      }
+      for (const id of new Set([...sourceIds, targetId])) recountSession(id);
+    })();
+
+    for (const id of new Set([...sourceIds, targetId])) {
+      broadcast(id, { type: "photos_moved", photoIds: ids, toSessionId: targetId });
+    }
+
+    return {
+      target: getSessionById(targetId),
+      sources: sourceIds.filter((id) => id !== targetId).map(getSessionById),
+    };
+  });
 }

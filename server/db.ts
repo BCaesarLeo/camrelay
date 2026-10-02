@@ -34,7 +34,8 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     completed_at TEXT,
     photo_count INTEGER NOT NULL DEFAULT 0,
-    selected_count INTEGER NOT NULL DEFAULT 0
+    selected_count INTEGER NOT NULL DEFAULT 0,
+    split_from INTEGER
   );
   CREATE TABLE IF NOT EXISTS photos (
     id TEXT PRIMARY KEY,
@@ -75,6 +76,19 @@ db.exec(`
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     synced INTEGER NOT NULL DEFAULT 0
   );
+  CREATE TABLE IF NOT EXISTS pending_guests (
+    id TEXT PRIMARY KEY,
+    event_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    name TEXT,
+    selfie_full_path TEXT,
+    selfie_thumb_path TEXT,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    matched_session_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_pending_guests_event ON pending_guests(event_id, status);
   CREATE INDEX IF NOT EXISTS idx_photos_session ON photos(session_id);
   CREATE INDEX IF NOT EXISTS idx_photos_session_selected ON photos(session_id, selected);
   CREATE INDEX IF NOT EXISTS idx_tokens_session ON download_tokens(session_id);
@@ -84,3 +98,20 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_contacts_event ON contacts(event_id);
   CREATE INDEX IF NOT EXISTS idx_contacts_synced ON contacts(synced);
 `);
+
+// Columns added after the first release — CREATE TABLE IF NOT EXISTS won't add them to an existing DB
+const sessionColumns = db.prepare("PRAGMA table_info(sessions)").all() as { name: string }[];
+if (!sessionColumns.some((c) => c.name === "split_from")) {
+  db.exec("ALTER TABLE sessions ADD COLUMN split_from INTEGER");
+}
+
+const contactColumns = db.prepare("PRAGMA table_info(contacts)").all() as { name: string }[];
+for (const [name, type] of [
+  ["attempts", "INTEGER NOT NULL DEFAULT 0"],
+  ["last_attempt_at", "TEXT"],
+  ["delivery_error", "TEXT"],
+]) {
+  if (!contactColumns.some((c) => c.name === name)) {
+    db.exec(`ALTER TABLE contacts ADD COLUMN ${name} ${type}`);
+  }
+}

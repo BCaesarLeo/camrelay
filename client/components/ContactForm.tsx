@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useStore } from "../hooks/useStore";
 import { api } from "../lib/api";
@@ -11,16 +11,37 @@ export function ContactForm() {
   const generateDownloadLink = useStore((s) => s.generateDownloadLink);
   const eventName = useStore((s) => s.eventName);
   const deliveryMode = useStore((s) => s.deliveryMode);
+  const autoResetSeconds = useStore((s) => s.autoResetSeconds);
+  const guest = useStore((s) => s.guest);
+  const rememberContact = useStore((s) => s.rememberContact);
+  const sendAnotherSession = useStore((s) => s.sendAnotherSession);
+  const finishGuest = useStore((s) => s.finishGuest);
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // A returning guest ("Send another session") doesn't retype anything
+  const [name, setName] = useState(guest?.name ?? "");
+  const [email, setEmail] = useState(guest?.email ?? "");
+  const [phone, setPhone] = useState(guest?.phone ?? "");
+  const [editing, setEditing] = useState(!guest);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const [resetCountdown, setResetCountdown] = useState(0);
 
   const selected = photos.filter((p) => p.selected && p.status === "ready");
   const isOnline = deliveryMode === "online";
+
+  // Don't leave someone's details on screen for the next guest to send photos to
+  useEffect(() => {
+    if (!sent) return;
+    const total = Math.max(20, autoResetSeconds);
+    setResetCountdown(total);
+    const interval = setInterval(() => setResetCountdown((prev) => Math.max(0, prev - 1)), 1000);
+    const timeout = setTimeout(finishGuest, total * 1000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [sent]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -51,6 +72,8 @@ export function ContactForm() {
         downloadToken: token,
         selectedPhotoIds: selected.map((p) => p.id),
       });
+
+      rememberContact({ name: name.trim(), email: email.trim(), phone: phone.trim() });
 
       if (isOnline) {
         // Online mode — show success, cloud sync sends email + MMS
@@ -97,19 +120,75 @@ export function ContactForm() {
             Thank you for visiting {eventName}
           </p>
 
-          <motion.button
-            onClick={() => {
-              setName("");
-              setEmail("");
-              setPhone("");
-              setSent(false);
-              useStore.getState().backToSessions();
-            }}
-            style={styles.doneBtn}
-            whileTap={{ scale: 0.97 }}
-          >
-            Done
-          </motion.button>
+          <div style={styles.successActions}>
+            <motion.button
+              onClick={sendAnotherSession}
+              style={styles.anotherBtn}
+              whileTap={{ scale: 0.97 }}
+            >
+              Send another session
+            </motion.button>
+            <motion.button onClick={finishGuest} style={styles.doneBtn} whileTap={{ scale: 0.97 }}>
+              Done
+            </motion.button>
+          </div>
+          <p style={styles.resetText}>
+            No need to re-enter your info for another session · closing in {resetCountdown}s
+          </p>
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Returning guest — one tap to send this session to the same place
+  if (!editing) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        style={styles.container}
+      >
+        <div style={styles.content}>
+          <button onClick={() => setScreen("review")} style={styles.backBtn}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back
+          </button>
+
+          <p style={styles.brand}>{eventName}</p>
+
+          <h1 style={styles.title}>Send these too?</h1>
+          <p style={styles.subtitle}>
+            {selected.length} {selected.length === 1 ? "photo" : "photos"} from session{" "}
+            {session?.sessionNumber} for {name}
+          </p>
+
+          <div style={styles.form}>
+            <div style={styles.savedContact}>
+              {email && <span>{email}</span>}
+              {phone && <span>{phone}</span>}
+            </div>
+
+            {error && <p style={styles.error}>{error}</p>}
+
+            <motion.button
+              onClick={handleSubmit}
+              disabled={loading}
+              style={{
+                ...styles.submitBtn,
+                opacity: loading ? 0.5 : 1,
+              }}
+              whileTap={!loading ? { scale: 0.98 } : undefined}
+            >
+              {loading ? "Preparing..." : isOnline ? "Send files" : "Get QR code"}
+            </motion.button>
+            <button onClick={() => setEditing(true)} disabled={loading} style={styles.changeBtn}>
+              Use different info
+            </button>
+          </div>
         </div>
       </motion.div>
     );
@@ -279,6 +358,23 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     margin: "0 auto 32px",
   },
+  successActions: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 12,
+  },
+  anotherBtn: {
+    padding: "16px 24px",
+    fontSize: 15,
+    fontWeight: 400,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase" as const,
+    color: "#2dd4a8",
+    background: "transparent",
+    border: "1px solid rgba(45, 212, 168, 0.4)",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
   doneBtn: {
     padding: "16px 64px",
     fontSize: 15,
@@ -288,6 +384,32 @@ const styles: Record<string, React.CSSProperties> = {
     color: "#fff",
     background: "#2dd4a8",
     border: "none",
+    fontFamily: "inherit",
+    cursor: "pointer",
+  },
+  resetText: {
+    marginTop: 20,
+    fontSize: 12,
+    fontWeight: 300,
+    color: "#444",
+  },
+  savedContact: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 4,
+    padding: "16px",
+    background: "#111",
+    border: "1px solid #222",
+    color: "#f0f0f0",
+    fontSize: 17,
+    fontWeight: 300,
+  },
+  changeBtn: {
+    padding: "12px",
+    background: "none",
+    color: "#777",
+    fontSize: 13,
+    letterSpacing: "0.06em",
     fontFamily: "inherit",
     cursor: "pointer",
   },

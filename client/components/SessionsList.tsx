@@ -9,6 +9,7 @@ export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
   const createSession = useStore((s) => s.createSession);
   const openSession = useStore((s) => s.openSession);
   const eventName = useStore((s) => s.eventName);
+  const setScreen = useStore((s) => s.setScreen);
   const gridRef = useRef<HTMLDivElement>(null);
   const [bgPhoto, setBgPhoto] = useState<string | null>(null);
   const [flash, setFlash] = useState<{ number: number; color: string } | null>(null);
@@ -30,6 +31,11 @@ export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
     loadSessions();
     const interval = setInterval(loadSessions, 5000);
     return () => clearInterval(interval);
+  }, []);
+
+  // A guest sending another session goes straight to the grid, past the welcome hero
+  useEffect(() => {
+    if (useStore.getState().guest) gridRef.current?.scrollIntoView();
   }, []);
 
   // Fetch a recent photo for hero background
@@ -153,6 +159,16 @@ export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
           >
             Search a Session
           </motion.button>
+
+          <motion.button
+            style={styles.findMeBtn}
+            onClick={() => setScreen("findme")}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+          >
+            Can&apos;t find your photos?
+          </motion.button>
         </div>
 
         {/* Scroll indicator */}
@@ -174,6 +190,9 @@ export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
           <span style={styles.gridCount}>
             {sessions.length} {sessions.length === 1 ? "session" : "sessions"}
           </span>
+          <button style={styles.findMeLink} onClick={() => setScreen("findme")}>
+            Can&apos;t find your photos?
+          </button>
         </div>
 
         <div style={styles.grid}>
@@ -236,6 +255,10 @@ export function SessionsList({ kiosk = false }: { kiosk?: boolean }) {
                       {session.photoCount}{" "}
                       {session.photoCount === 1 ? "photo" : "photos"}
                     </span>
+                    {session.splitFrom != null && (
+                      <span>· split from {String(session.splitFrom).padStart(2, "0")}</span>
+                    )}
+                    {session.name && <span>· {session.name}</span>}
                   </div>
                 </div>
               </motion.div>
@@ -376,6 +399,31 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     fontFamily: "inherit",
     transition: "all 0.3s ease",
+  },
+  findMeBtn: {
+    display: "block",
+    margin: "20px auto 0",
+    padding: "12px 20px",
+    fontSize: 14,
+    fontWeight: 300,
+    letterSpacing: "0.04em",
+    color: "rgba(255,255,255,0.55)",
+    background: "transparent",
+    textDecoration: "underline",
+    textUnderlineOffset: 4,
+    cursor: "pointer",
+    fontFamily: "inherit",
+  },
+  findMeLink: {
+    marginLeft: "auto",
+    padding: "8px 14px",
+    fontSize: 12,
+    letterSpacing: "0.06em",
+    color: "#888",
+    background: "transparent",
+    border: "1px solid #2a2a2a",
+    cursor: "pointer",
+    fontFamily: "inherit",
   },
   scrollHint: {
     position: "absolute",
