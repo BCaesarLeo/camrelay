@@ -1,0 +1,11 @@
+# Everything generated from real event photos stays on this machine, out of git:
+# guests' photos, face crops, face prints and the pages built from them.
+photos/
+models/
+out/
+venv/
+.deepface/
+index.json
+mockup/index.html
+mockup/data.json
+mockup/img/
