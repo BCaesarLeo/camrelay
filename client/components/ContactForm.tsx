@@ -247,7 +247,7 @@ export function ContactForm() {
               />
               {/* Texting consent — the wording is what the carrier campaign was registered with */}
               <p style={styles.consent}>
-                By entering your number you agree to receive your photos by text from StudioRelay.
+                By entering your number you agree to receive your photos by text from StudioRelay by DCAV.
                 Message frequency varies (typically 1–3 messages per visit). Msg &amp; data rates may
                 apply. Reply STOP to opt out, HELP for help. Privacy policy: studiorelay.app/privacy
               </p>
