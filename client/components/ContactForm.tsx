@@ -237,13 +237,21 @@ export function ContactForm() {
             style={styles.input}
           />
           {smsEnabled && (
-            <input
-              type="tel"
-              placeholder="Phone (optional)"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              style={styles.input}
-            />
+            <>
+              <input
+                type="tel"
+                placeholder="Phone (optional)"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                style={styles.input}
+              />
+              {/* Texting consent — the wording is what the carrier campaign was registered with */}
+              <p style={styles.consent}>
+                By entering your number you agree to receive your photos by text from StudioRelay.
+                Message frequency varies (typically 1–3 messages per visit). Msg &amp; data rates may
+                apply. Reply STOP to opt out, HELP for help. Privacy policy: studiorelay.app/privacy
+              </p>
+            </>
           )}
 
           {error && <p style={styles.error}>{error}</p>}
@@ -331,6 +339,12 @@ const styles: Record<string, React.CSSProperties> = {
     outline: "none",
     borderRadius: 0,
     WebkitAppearance: "none" as any,
+  },
+  consent: {
+    fontSize: 12,
+    lineHeight: 1.5,
+    color: "#777",
+    fontWeight: 300,
   },
   error: {
     color: "#F06060",
