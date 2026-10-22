@@ -23,7 +23,7 @@ function getTwilio() {
   if (!_twilioClient && process.env.TWILIO_ACCOUNT_SID) {
     _twilioClient = twilio(
       process.env.TWILIO_API_KEY_SID || process.env.TWILIO_ACCOUNT_SID,
-      process.env.TWILIO_API_KEY_SECRET || "",
+      process.env.TWILIO_API_KEY_SECRET || process.env.TWILIO_AUTH_TOKEN || "",
       { accountSid: process.env.TWILIO_ACCOUNT_SID }
     );
   }
