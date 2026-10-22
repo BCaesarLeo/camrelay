@@ -77,5 +77,5 @@ export const api = {
     }),
 
   getConfig: () =>
-    request<{ eventName: string; autoResetSeconds: number; wifiNetwork: string | null; wifiPassword: string | null }>("/api/config"),
+    request<{ eventName: string; autoResetSeconds: number; wifiNetwork: string | null; wifiPassword: string | null; smsEnabled: boolean }>("/api/config"),
 };

@@ -22,6 +22,7 @@ interface Store {
   autoResetSeconds: number;
   wifiNetwork: string | null;
   wifiPassword: string | null;
+  smsEnabled: boolean;
   deliveryMode: "online" | "local";
   setDeliveryMode: (mode: "online" | "local") => void;
   loadConfig: () => Promise<void>;
@@ -75,6 +76,7 @@ export const useStore = create<Store>((set, get) => ({
   autoResetSeconds: 60,
   wifiNetwork: null,
   wifiPassword: null,
+  smsEnabled: false,
   deliveryMode: "online",
   setDeliveryMode: (mode) => set({ deliveryMode: mode }),
   loadConfig: async () => {
@@ -85,6 +87,7 @@ export const useStore = create<Store>((set, get) => ({
         autoResetSeconds: cfg.autoResetSeconds,
         wifiNetwork: cfg.wifiNetwork ?? null,
         wifiPassword: cfg.wifiPassword ?? null,
+        smsEnabled: cfg.smsEnabled ?? false,
       });
     } catch {
       // Use defaults

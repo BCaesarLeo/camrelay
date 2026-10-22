@@ -29,6 +29,7 @@ export function ContactForm() {
 
   const selected = photos.filter((p) => p.selected && p.status === "ready");
   const isOnline = deliveryMode === "online";
+  const smsEnabled = useStore((s) => s.smsEnabled);
 
   // Don't leave someone's details on screen for the next guest to send photos to
   useEffect(() => {
@@ -48,8 +49,8 @@ export function ContactForm() {
       setError("Please enter your name");
       return;
     }
-    if (!email.trim() && !phone.trim()) {
-      setError("Please enter your email or phone number");
+    if (!email.trim() && (!smsEnabled || !phone.trim())) {
+      setError(smsEnabled ? "Please enter your email or phone number" : "Please enter your email address");
       return;
     }
     if (!session) return;
@@ -235,13 +236,15 @@ export function ContactForm() {
             onChange={(e) => setEmail(e.target.value)}
             style={styles.input}
           />
-          <input
-            type="tel"
-            placeholder="Phone (optional)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={styles.input}
-          />
+          {smsEnabled && (
+            <input
+              type="tel"
+              placeholder="Phone (optional)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={styles.input}
+            />
+          )}
 
           {error && <p style={styles.error}>{error}</p>}
 

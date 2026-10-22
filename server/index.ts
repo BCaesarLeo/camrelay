@@ -18,7 +18,7 @@ import { contactRoutes } from "./routes/contacts.js";
 import { findMeRoutes } from "./routes/findme.js";
 import { startCapture } from "./capture/index.js";
 import { startInternetMonitor } from "./delivery/index.js";
-import { startCloudSync } from "./delivery/cloud.js";
+import { startCloudSync, smsEnabled } from "./delivery/cloud.js";
 import { startDynamoSync } from "./delivery/dynamo.js";
 
 async function main() {
@@ -93,6 +93,7 @@ async function main() {
       autoResetSeconds: config.autoResetSeconds,
       wifiNetwork: config.wifiNetwork ?? null,
       wifiPassword: config.wifiPassword ?? null,
+      smsEnabled: smsEnabled(),
       activeEvent: activeEvent ?? null,
     };
   });

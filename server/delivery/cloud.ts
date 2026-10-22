@@ -9,6 +9,16 @@ import fs from "fs";
 import path from "path";
 
 let _twilioClient: ReturnType<typeof twilio> | null = null;
+// Texting needs a Twilio account, a key and a Messaging Service; without all three the kiosk
+// runs email-only and never asks guests for a phone number
+export function smsEnabled(): boolean {
+  return !!(
+    process.env.TWILIO_ACCOUNT_SID &&
+    (process.env.TWILIO_API_KEY_SECRET || process.env.TWILIO_AUTH_TOKEN) &&
+    process.env.TWILIO_MESSAGING_SERVICE_SID
+  );
+}
+
 function getTwilio() {
   if (!_twilioClient && process.env.TWILIO_ACCOUNT_SID) {
     _twilioClient = twilio(
@@ -203,8 +213,12 @@ async function processContact(contact: any) {
     }
   }
 
-  // Text with permanent S3 download link via Twilio — same rule, never sent twice
-  if (contact.phone && !contact.sms_sent) {
+  // Text with permanent S3 download link via Twilio — same rule, never sent twice.
+  // With texting not set up, a phone number is simply noted; it must not hold up the email.
+  if (contact.phone && !contact.sms_sent && !smsEnabled()) {
+    db.prepare("UPDATE contacts SET sms_error = 'Texting not set up on this kiosk' WHERE id = ?").run(contact.id);
+  }
+  if (contact.phone && !contact.sms_sent && smsEnabled()) {
     try {
       let cleanPhone = contact.phone.replace(/[^+\d]/g, "");
       if (!cleanPhone.startsWith("+")) cleanPhone = "+1" + cleanPhone;
