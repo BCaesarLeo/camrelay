@@ -60,8 +60,13 @@ async function main() {
   });
 
   // Serve built client (production)
-  const clientDist = path.join(import.meta.dirname, "..", "dist", "client");
-  if (fs.existsSync(clientDist)) {
+  // Works both from source (server/) and from the compiled output (dist/server/server/)
+  const clientDist = [
+    path.join(import.meta.dirname, "..", "dist", "client"),
+    path.join(import.meta.dirname, "..", "..", "client"),
+    path.join(process.cwd(), "dist", "client"),
+  ].find((p) => fs.existsSync(path.join(p, "index.html")));
+  if (clientDist) {
     await app.register(fastifyStatic, {
       root: clientDist,
       prefix: "/",
