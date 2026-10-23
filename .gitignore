@@ -8,3 +8,7 @@ storage/
 .keys/
 *.p8
 .DS_Store
+
+# local-only: guest contact data and credential backups
+scripts/ancc_easter_delivery.py
+.env.bak-*

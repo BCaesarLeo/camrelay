@@ -1,0 +1,3 @@
+# Real guest photos and anything generated from them stay on this machine
+samples/
+out/
