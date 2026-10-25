@@ -124,8 +124,14 @@ async function processContact(contact: any) {
     .map((id) => db.prepare("SELECT * FROM photos WHERE id = ?").get(id) as any)
     .filter(Boolean);
 
-  // Still converting — not a failure, just check again on the next pass
-  if (photos.some((p) => p.status === "processing")) return;
+  // Still converting — not a failure, just check again on the next pass.
+  // An AI card is waited for too, but never for more than a few minutes: if the
+  // drawer hangs, the guest's photos go out without it.
+  const CARD_WAIT_MS = 4 * 60_000;
+  const stillBusy = (p: any) =>
+    p.status === "processing" &&
+    !(p.kind === "card" && Date.now() - sqliteTimeMs(p.created_at) > CARD_WAIT_MS);
+  if (photos.some(stillBusy)) return;
 
   // A photo that never converted is left out rather than blocking the rest
   const usable = photos.filter((p) => p.full_path && fs.existsSync(p.full_path));

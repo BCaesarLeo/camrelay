@@ -77,5 +77,20 @@ export const api = {
     }),
 
   getConfig: () =>
-    request<{ eventName: string; autoResetSeconds: number; wifiNetwork: string | null; wifiPassword: string | null; smsEnabled: boolean }>("/api/config"),
+    request<{
+      eventName: string;
+      autoResetSeconds: number;
+      wifiNetwork: string | null;
+      wifiPassword: string | null;
+      smsEnabled: boolean;
+      aiCardsEnabled?: boolean;
+      aiCardsAvailable?: boolean;
+    }>("/api/config"),
+
+  // AI card: one per session, drawn from the photo the guest was looking at
+  requestCard: (sessionId: string, photoId: string) =>
+    request<Photo>(`/api/sessions/${sessionId}/card`, {
+      method: "POST",
+      body: JSON.stringify({ photoId }),
+    }),
 };

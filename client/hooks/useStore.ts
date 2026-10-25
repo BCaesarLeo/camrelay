@@ -23,6 +23,10 @@ interface Store {
   wifiNetwork: string | null;
   wifiPassword: string | null;
   smsEnabled: boolean;
+  // AI Halloween card — offered only while the host switch is on and the drawer is healthy
+  aiCardsAvailable: boolean;
+  cardError: string | null;
+  requestCard: (photoId: string) => Promise<void>;
   deliveryMode: "online" | "local";
   setDeliveryMode: (mode: "online" | "local") => void;
   loadConfig: () => Promise<void>;
@@ -77,6 +81,23 @@ export const useStore = create<Store>((set, get) => ({
   wifiNetwork: null,
   wifiPassword: null,
   smsEnabled: false,
+  aiCardsAvailable: false,
+  cardError: null,
+  requestCard: async (photoId) => {
+    const { session } = get();
+    if (!session) return;
+    set({ cardError: null });
+    try {
+      const photo = await api.requestCard(session.id, photoId);
+      // Shows "drawing" at once; the finished card arrives over the websocket
+      if (get().session?.id === session.id) get().addPhoto(photo);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      set({ cardError: msg });
+      // The offer disappears if the server says cards are off right now
+      if (msg.startsWith("503")) set({ aiCardsAvailable: false });
+    }
+  },
   deliveryMode: "online",
   setDeliveryMode: (mode) => set({ deliveryMode: mode }),
   loadConfig: async () => {
@@ -88,6 +109,7 @@ export const useStore = create<Store>((set, get) => ({
         wifiNetwork: cfg.wifiNetwork ?? null,
         wifiPassword: cfg.wifiPassword ?? null,
         smsEnabled: cfg.smsEnabled ?? false,
+        aiCardsAvailable: cfg.aiCardsAvailable ?? false,
       });
     } catch {
       // Use defaults
@@ -109,7 +131,9 @@ export const useStore = create<Store>((set, get) => ({
 
   session: null,
   openSession: (session) => {
-    set({ session, photos: [], downloadInfo: null, screen: "session" });
+    set({ session, photos: [], downloadInfo: null, cardError: null, screen: "session" });
+    // Re-check the card switch each time a guest starts, so the host can turn it on/off live
+    get().loadConfig();
   },
 
   completeSession: async () => {

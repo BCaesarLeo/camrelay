@@ -5,6 +5,20 @@ import { GuestMatcher } from "./GuestMatcher";
 import { DeliveryPanel } from "./DeliveryPanel";
 import type { Event } from "../../shared/types";
 
+interface CardStats {
+  enabled: boolean;
+  configured: boolean;
+  available: boolean;
+  text: string;
+  drawn: number;
+  failed: number;
+  today: number;
+  dailyCap: number;
+  pausedUntil: string | null;
+  lastError: string | null;
+  queued: number;
+}
+
 interface CaptureStatus {
   mode: "sony" | "nikon" | "watch";
   active: boolean;
@@ -26,6 +40,8 @@ export function HostView() {
   const [newEventName, setNewEventName] = useState("");
   const [capture, setCapture] = useState<CaptureStatus | null>(null);
   const [switching, setSwitching] = useState(false);
+  const [cards, setCards] = useState<CardStats | null>(null);
+  const [cardText, setCardText] = useState<string | null>(null);
   useEffect(() => {
     loadConfig();
     loadSessions();
@@ -36,14 +52,16 @@ export function HostView() {
 
   const refreshAll = async () => {
     try {
-      const [evts, activeEvt, cap] = await Promise.all([
+      const [evts, activeEvt, cap, cardStats] = await Promise.all([
         fetch("/api/events").then((r) => r.json()),
         fetch("/api/events/active").then((r) => r.ok ? r.json() : null),
         fetch("/api/capture/status").then((r) => r.json()),
+        fetch("/api/settings/ai-cards").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       ]);
       setEvents(evts);
       setActiveEvent(activeEvt);
       setCapture(cap);
+      setCards(cardStats);
       loadSessions();
     } catch {}
   };
@@ -78,6 +96,17 @@ export function HostView() {
       setCapture(await res.json());
     } catch {}
     setSwitching(false);
+  };
+
+  const updateCards = async (body: { enabled?: boolean; text?: string }) => {
+    try {
+      const res = await fetch("/api/settings/ai-cards", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) setCards(await res.json());
+    } catch {}
   };
 
   const activeSession = sessions.find((s) => s.status === "active");
@@ -194,6 +223,68 @@ export function HostView() {
             <span style={styles.modeBtnDesc}>QR code download</span>
           </button>
         </div>
+      </div>
+
+      {/* AI Halloween cards */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>AI cards</p>
+        {cards ? (
+          <>
+            <div style={styles.modeSelector}>
+              <button
+                onClick={() => updateCards({ enabled: false })}
+                style={{ ...styles.modeBtn, ...(!cards.enabled ? styles.modeBtnActive : {}) }}
+              >
+                <span style={styles.modeBtnTitle}>Off</span>
+                <span style={styles.modeBtnDesc}>Kiosk as usual</span>
+              </button>
+              <button
+                onClick={() => updateCards({ enabled: true })}
+                disabled={!cards.configured}
+                style={{ ...styles.modeBtn, ...(cards.enabled ? styles.modeBtnActive : {}), opacity: cards.configured ? 1 : 0.4 }}
+              >
+                <span style={styles.modeBtnTitle}>On</span>
+                <span style={styles.modeBtnDesc}>Guests can tap for a card</span>
+              </button>
+            </div>
+            <input
+              type="text"
+              value={cardText ?? cards.text}
+              onChange={(e) => setCardText(e.target.value)}
+              onBlur={() => {
+                if (cardText !== null && cardText.trim() && cardText.trim() !== cards.text) updateCards({ text: cardText });
+                setCardText(null);
+              }}
+              placeholder="Text on the card banner"
+              style={styles.input}
+            />
+            <div style={styles.statusRow}>
+              <span style={styles.statusLabel}>Status</span>
+              <span style={{ color: cards.enabled ? (cards.available ? "#2dd4a8" : "#F06060") : "#555", fontSize: 13 }}>
+                {!cards.configured
+                  ? "Not set up (missing GEMINI_API_KEY or crest)"
+                  : !cards.enabled
+                    ? "Off"
+                    : cards.pausedUntil
+                      ? `Paused after repeated failures until ${new Date(cards.pausedUntil).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                      : cards.today >= cards.dailyCap
+                        ? "Daily limit reached"
+                        : "On"}
+              </span>
+            </div>
+            <div style={styles.statusRow}>
+              <span style={styles.statusLabel}>Today</span>
+              <span style={{ color: "#888", fontSize: 13 }}>
+                {cards.today} drawn · {cards.failed} failed · {cards.queued} in queue
+              </span>
+            </div>
+            {cards.lastError && (
+              <p style={{ ...styles.importHint, color: "#a05050", marginTop: 4 }}>Last error: {cards.lastError}</p>
+            )}
+          </>
+        ) : (
+          <p style={styles.noActive}>Loading…</p>
+        )}
       </div>
 
       {/* Delivery queue */}

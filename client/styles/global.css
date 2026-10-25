@@ -77,3 +77,6 @@ button {
   background: #222;
   border-radius: 2px;
 }
+
+/* AI card offer spinner */
+@keyframes aicard-spin { to { transform: rotate(360deg); } }

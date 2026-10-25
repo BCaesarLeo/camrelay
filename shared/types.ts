@@ -30,6 +30,8 @@ export interface Photo {
   fullUrl: string | null;
   status: "processing" | "ready" | "error";
   selected: boolean;
+  // "card": an AI-drawn card made from one of the session's photos
+  kind: "photo" | "card";
   width: number | null;
   height: number | null;
   createdAt: string;

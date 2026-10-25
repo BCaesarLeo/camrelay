@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useStore } from "../hooks/useStore";
+import { AiCardOffer } from "./AiCardOffer";
 
 export function ReviewScreen() {
   const photos = useStore((s) => s.photos);
@@ -8,6 +9,8 @@ export function ReviewScreen() {
   const openRegroup = useStore((s) => s.openRegroup);
 
   const selected = photos.filter((p) => p.selected && p.status === "ready");
+  const drawing = photos.some((p) => p.kind === "card" && p.status === "processing");
+  const firstPhoto = selected.find((p) => p.kind !== "card") ?? null;
 
   const handleGetPhotos = () => {
     setScreen("contact");
@@ -47,6 +50,7 @@ export function ReviewScreen() {
 
       {/* Grid */}
       <div style={styles.grid}>
+        <AiCardOffer size="tile" sourcePhotoId={firstPhoto?.id ?? null} />
         {selected.map((photo, i) => (
           <motion.div
             key={photo.id}
@@ -59,7 +63,7 @@ export function ReviewScreen() {
             <img
               src={photo.thumbnailUrl!}
               alt=""
-              style={styles.photoImg}
+              style={photo.kind === "card" ? { ...styles.photoImg, objectFit: "contain", background: "#06264a" } : styles.photoImg}
               draggable={false}
             />
           </motion.div>
@@ -77,7 +81,7 @@ export function ReviewScreen() {
           }}
           whileTap={selected.length > 0 ? { scale: 0.98 } : undefined}
         >
-          Get my photos
+          {drawing ? "Get my photos + card" : "Get my photos"}
         </motion.button>
       </div>
     </motion.div>

@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useStore } from "../hooks/useStore";
+import { AiCardOffer } from "./AiCardOffer";
 
 export function SessionView() {
   const photos = useStore((s) => s.photos);
@@ -102,6 +103,10 @@ export function SessionView() {
 
       {/* Main preview area */}
       <div style={styles.previewArea}>
+        <AiCardOffer
+          size="compact"
+          sourcePhotoId={activePhoto && activePhoto.kind !== "card" ? activePhoto.id : (readyPhotos.find((p) => p.kind !== "card")?.id ?? null)}
+        />
         {readyPhotos.length === 0 ? (
           <motion.p
             style={styles.emptyText}
@@ -202,7 +207,7 @@ export function SessionView() {
                 <img
                   src={photo.thumbnailUrl!}
                   alt=""
-                  style={styles.thumbImg}
+                  style={photo.kind === "card" ? { ...styles.thumbImg, objectFit: "contain", background: "#06264a" } : styles.thumbImg}
                   draggable={false}
                 />
                 {photo.selected && <div style={styles.thumbCheck} />}

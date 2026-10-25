@@ -27,7 +27,11 @@ export function ContactForm() {
   const [error, setError] = useState("");
   const [resetCountdown, setResetCountdown] = useState(0);
 
-  const selected = photos.filter((p) => p.selected && p.status === "ready");
+  // A card still being drawn is included too: delivery waits for it (a few minutes at
+  // most) and sends the photos without it if it fails
+  const selected = photos.filter(
+    (p) => p.selected && (p.status === "ready" || (p.kind === "card" && p.status === "processing"))
+  );
   const isOnline = deliveryMode === "online";
   const smsEnabled = useStore((s) => s.smsEnabled);
 

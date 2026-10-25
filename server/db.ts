@@ -105,6 +105,19 @@ if (!sessionColumns.some((c) => c.name === "split_from")) {
   db.exec("ALTER TABLE sessions ADD COLUMN split_from INTEGER");
 }
 
+const photoColumns = db.prepare("PRAGMA table_info(photos)").all() as { name: string }[];
+for (const [name, type] of [
+  ["kind", "TEXT NOT NULL DEFAULT 'photo'"], // 'photo' from the camera, 'card' drawn by AI
+  ["source_photo_id", "TEXT"],
+]) {
+  if (!photoColumns.some((c) => c.name === name)) {
+    db.exec(`ALTER TABLE photos ADD COLUMN ${name} ${type}`);
+  }
+}
+
+// Small key/value store for host-page switches that must survive a restart
+db.exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
+
 const contactColumns = db.prepare("PRAGMA table_info(contacts)").all() as { name: string }[];
 for (const [name, type] of [
   ["attempts", "INTEGER NOT NULL DEFAULT 0"],

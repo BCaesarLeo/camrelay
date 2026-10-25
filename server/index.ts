@@ -15,6 +15,8 @@ import { downloadRoutes } from "./routes/download.js";
 import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
+import { cardRoutes } from "./routes/cards.js";
+import { cardsAvailable, cardsEnabled, failOrphanedCards } from "./ai/cards.js";
 import { findMeRoutes } from "./routes/findme.js";
 import { startCapture } from "./capture/index.js";
 import { startInternetMonitor } from "./delivery/index.js";
@@ -89,6 +91,7 @@ async function main() {
   await app.register(eventRoutes);
   await app.register(contactRoutes);
   await app.register(findMeRoutes);
+  await app.register(cardRoutes);
 
   // Config endpoint for frontend
   app.get("/api/config", async () => {
@@ -99,6 +102,9 @@ async function main() {
       wifiNetwork: config.wifiNetwork ?? null,
       wifiPassword: config.wifiPassword ?? null,
       smsEnabled: smsEnabled(),
+      // Offer the AI card only while the host switch is on and the drawer is healthy
+      aiCardsEnabled: cardsEnabled(),
+      aiCardsAvailable: cardsAvailable(),
       activeEvent: activeEvent ?? null,
     };
   });

@@ -49,6 +49,7 @@ function rowToPhoto(row: any): Photo {
     fullUrl: row.full_path ? pathToUrl(row.full_path) : null,
     status: row.status,
     selected: row.selected === 1,
+    kind: row.kind === "card" ? "card" : "photo",
     width: row.width,
     height: row.height,
     createdAt: row.created_at,

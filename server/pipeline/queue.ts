@@ -96,6 +96,7 @@ export function enqueuePhoto(filePath: string) {
         fullUrl: `/storage/sessions/${sessionFolder}/full/${photoId}.jpg`,
         status: "ready",
         selected: true,
+        kind: "photo",
         width: result.width,
         height: result.height,
         createdAt: new Date().toISOString(),
