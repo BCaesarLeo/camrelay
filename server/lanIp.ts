@@ -37,7 +37,9 @@ export function lanAddresses(): { iface: string; address: string; internet: bool
 export function getLanIp(): string {
   if (process.env.LAN_IP) return process.env.LAN_IP;
   const all = lanAddresses();
+  const real = all.filter((a) => !a.address.startsWith("169.254.")); // self-assigned = no network there
+  const pool = real.length ? real : all;
   // the network without the internet route is where the iPads are; otherwise anything
-  const local = all.find((a) => !a.internet);
-  return (local ?? all[0])?.address ?? "localhost";
+  const local = pool.find((a) => !a.internet);
+  return (local ?? pool[0])?.address ?? "localhost";
 }
