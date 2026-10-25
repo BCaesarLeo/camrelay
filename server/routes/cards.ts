@@ -27,10 +27,11 @@ export async function cardRoutes(app: FastifyInstance) {
   // Host page: switch + banner text + health
   app.get("/api/settings/ai-cards", async () => cardStats());
 
-  app.post<{ Body: { enabled?: boolean; text?: string } }>("/api/settings/ai-cards", async (req) => {
+  app.post<{ Body: { enabled?: boolean; text?: string; theme?: string } }>("/api/settings/ai-cards", async (req) => {
     updateCardSettings({
       enabled: typeof req.body?.enabled === "boolean" ? req.body.enabled : undefined,
       text: typeof req.body?.text === "string" ? req.body.text : undefined,
+      theme: typeof req.body?.theme === "string" ? req.body.theme : undefined,
     });
     return cardStats();
   });

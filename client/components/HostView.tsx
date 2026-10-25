@@ -10,6 +10,7 @@ interface CardStats {
   configured: boolean;
   available: boolean;
   text: string;
+  theme: "halloween" | "wizard";
   drawn: number;
   failed: number;
   today: number;
@@ -114,7 +115,7 @@ export function HostView() {
     setSwitching(false);
   };
 
-  const updateCards = async (body: { enabled?: boolean; text?: string }) => {
+  const updateCards = async (body: { enabled?: boolean; text?: string; theme?: "halloween" | "wizard" }) => {
     try {
       const res = await fetch("/api/settings/ai-cards", {
         method: "POST",
@@ -318,6 +319,22 @@ export function HostView() {
               placeholder="Text on the card banner"
               style={styles.input}
             />
+            <div style={{ ...styles.modeSelector, marginTop: 8 }}>
+              <button
+                onClick={() => updateCards({ theme: "halloween" })}
+                style={{ ...styles.modeBtn, ...(cards.theme !== "wizard" ? styles.modeBtnActive : {}) }}
+              >
+                <span style={styles.modeBtnTitle}>Halloween</span>
+                <span style={styles.modeBtnDesc}>Clubhouse lawn, mixed costumes</span>
+              </button>
+              <button
+                onClick={() => updateCards({ theme: "wizard" })}
+                style={{ ...styles.modeBtn, ...(cards.theme === "wizard" ? styles.modeBtnActive : {}) }}
+              >
+                <span style={styles.modeBtnTitle}>Wizard school</span>
+                <span style={styles.modeBtnDesc}>Castle great hall, robes and house scarves; keeps costumes they wear</span>
+              </button>
+            </div>
             <div style={styles.statusRow}>
               <span style={styles.statusLabel}>Status</span>
               <span style={{ color: cards.enabled ? (cards.available ? "#2dd4a8" : "#F06060") : "#555", fontSize: 13 }}>

@@ -24,31 +24,61 @@ const ASSETS = path.join(process.cwd(), "assets", "ai-cards");
 const CREST = path.join(ASSETS, "ancc-crest.png");
 
 // Same prompt the sample cards were made with, minus the family name banner
-const THEME = {
-  colors: "deep navy blue (#093C6D) and antique gold (#D4BA81)",
-  scene:
-    "a festive Halloween evening on the lawn in front of a stately brick country-club clubhouse " +
-    "with white columns, glowing carved jack-o'-lanterns on the steps, warm string lights, drifting " +
-    "autumn leaves, a big full moon and a few friendly cartoon bats and ghosts. Cheerful and " +
-    "family-friendly, never scary or gory.",
-  wardrobe:
-    "dress each person in a fun, tasteful Halloween costume that suits them (for example a pirate, " +
-    "witch, astronaut, superhero, pumpkin, cat, or vampire), with no masks so faces stay clearly visible",
-  style: "a polished 3D animated-movie look (Pixar / Disney style), soft studio lighting, expressive but faithful faces",
+// Card look. The host picks one on the host page; "wizard" is for parties whose costumes lean
+// towards a magical boarding school (robes, house scarves, wands) and keeps whatever costume the
+// family already wears.
+export type CardTheme = "halloween" | "wizard";
+
+const THEMES: Record<CardTheme, { colors: string; scene: string; wardrobe: string; style: string; costumes: string[] }> = {
+  halloween: {
+    colors: "deep navy blue (#093C6D) and antique gold (#D4BA81)",
+    scene:
+      "a festive Halloween evening on the lawn in front of a stately brick country-club clubhouse " +
+      "with white columns, glowing carved jack-o'-lanterns on the steps, warm string lights, drifting " +
+      "autumn leaves, a big full moon and a few friendly cartoon bats and ghosts. Cheerful and " +
+      "family-friendly, never scary or gory.",
+    wardrobe:
+      "dress each person in a fun, tasteful Halloween costume that suits them (for example a pirate, " +
+      "witch, astronaut, superhero, pumpkin, cat, or vampire), with no masks so faces stay clearly visible",
+    style: "a polished 3D animated-movie look (Pixar / Disney style), soft studio lighting, expressive but faithful faces",
+    costumes: [
+      "classic Halloween: witches, vampires and a friendly skeleton",
+      "space: astronauts and a little green alien",
+      "superheroes with capes and emblems",
+      "a royal court: king, queen, knight and princess",
+      "fairy-tale: wizard, fairy, dragon and a unicorn",
+      "pirates and a sea captain",
+      "farm Halloween: scarecrow, pumpkin and a black cat",
+      "retro: 1920s detectives and flappers",
+    ],
+  },
+  wizard: {
+    colors: "deep navy blue (#093C6D) and antique gold (#D4BA81)",
+    scene:
+      "a Halloween feast in the candle-lit great hall of a grand old stone castle school of magic: " +
+      "hundreds of floating candles, an enchanted ceiling showing a night sky with a big full moon, long " +
+      "banquet tables with carved jack-o'-lanterns and golden goblets, owls swooping overhead, tall gothic " +
+      "windows and drifting magical sparkles. Cheerful and family-friendly, never scary or gory.",
+    wardrobe:
+      "if a person is already wearing a costume in the photo, keep that costume faithfully (robes, scarves, " +
+      "round glasses, wands, hats, props) and simply give it storybook polish; otherwise dress them as " +
+      "students or professors of the magical boarding school in long black wizarding robes over school " +
+      "uniforms with house-coloured ties and scarves, pointed hats and a wand in hand. No masks, so faces " +
+      "stay clearly visible",
+    style: "a polished 3D animated-movie look (Pixar / Disney style), warm candlelight, expressive but faithful faces",
+    costumes: [
+      "scarlet-and-gold house scarves with a lion crest",
+      "blue-and-bronze house scarves with an eagle crest",
+      "yellow-and-black house scarves with a badger crest",
+      "green-and-silver house scarves with a serpent crest",
+      "professors of the school in rich velvet robes, pointed hats and spectacles",
+      "the school's broomstick flying team in leather pads and goggles, holding broomsticks",
+    ],
+  },
 };
 
-const COSTUME_SETS = [
-  "classic Halloween: witches, vampires and a friendly skeleton",
-  "space: astronauts and a little green alien",
-  "superheroes with capes and emblems",
-  "a royal court: king, queen, knight and princess",
-  "fairy-tale: wizard, fairy, dragon and a unicorn",
-  "pirates and a sea captain",
-  "farm Halloween: scarecrow, pumpkin and a black cat",
-  "retro: 1920s detectives and flappers",
-];
-
-function buildPrompt(eventText: string, costumeSet: string): string {
+function buildPrompt(theme: CardTheme, eventText: string, costumeSet: string): string {
+  const THEME = THEMES[theme];
   return (
     "Create a premium collectible trading card illustration, portrait orientation.\n\n" +
     "SUBJECTS: First count the people in the attached photo (ignore any costumed mascot character). " +
@@ -85,9 +115,15 @@ export function cardText(): string {
   return row?.value?.trim() || "ANCC HALLOWEEN 2026";
 }
 
-export function updateCardSettings(opts: { enabled?: boolean; text?: string }) {
+export function cardTheme(): CardTheme {
+  const row = getSetting.get("ai_cards_theme") as { value: string } | undefined;
+  return row?.value === "wizard" ? "wizard" : "halloween";
+}
+
+export function updateCardSettings(opts: { enabled?: boolean; text?: string; theme?: string }) {
   if (opts.enabled !== undefined) putSetting.run("ai_cards_enabled", opts.enabled ? "1" : "0");
   if (opts.text !== undefined) putSetting.run("ai_cards_text", opts.text.trim().slice(0, 60));
+  if (opts.theme !== undefined) putSetting.run("ai_cards_theme", opts.theme === "wizard" ? "wizard" : "halloween");
 }
 
 export function cardsConfigured(): boolean {
@@ -121,6 +157,7 @@ export function cardStats() {
     configured: cardsConfigured(),
     available: cardsAvailable(),
     text: cardText(),
+    theme: cardTheme(),
     drawn: stats.drawn,
     failed: stats.failed,
     today: countToday(),
@@ -258,8 +295,10 @@ async function drawCard(sourcePath: string, eventText: string, id: string): Prom
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY not set");
 
-  // Costume theme rotates by card id so a row of cards isn't all pirates
-  const costume = COSTUME_SETS[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % COSTUME_SETS.length];
+  // Costume set rotates by card id so a row of cards isn't all pirates (or all one house)
+  const theme = cardTheme();
+  const sets = THEMES[theme].costumes;
+  const costume = sets[[...id].reduce((a, c) => a + c.charCodeAt(0), 0) % sets.length];
 
   // A 1600px copy is plenty for likeness and keeps the request small
   const photo = await sharp(sourcePath).rotate().resize(1600, 1600, { fit: "inside", withoutEnlargement: true }).jpeg({ quality: 88 }).toBuffer();
@@ -270,7 +309,7 @@ async function drawCard(sourcePath: string, eventText: string, id: string): Prom
       {
         role: "user",
         parts: [
-          { text: buildPrompt(eventText, costume) },
+          { text: buildPrompt(theme, eventText, costume) },
           { inlineData: { mimeType: "image/jpeg", data: photo.toString("base64") } },
           { text: "Club crest to reproduce on the card:" },
           { inlineData: { mimeType: "image/png", data: crest.toString("base64") } },
