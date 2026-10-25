@@ -19,7 +19,7 @@ import { cardRoutes } from "./routes/cards.js";
 import { getLanIp, lanAddresses } from "./lanIp.js";
 import { suggestionRoutes, selectScreen } from "./routes/suggestions.js";
 import { startFaceService, suggestionsEnabled, faceServiceConfigured } from "./faces/index.js";
-import { cardsAvailable, cardsEnabled, failOrphanedCards } from "./ai/cards.js";
+import { cardsAvailable, cardsEnabled, cardChoices, failOrphanedCards, startCardRetries } from "./ai/cards.js";
 import { findMeRoutes } from "./routes/findme.js";
 import { startCapture } from "./capture/index.js";
 import { startInternetMonitor } from "./delivery/index.js";
@@ -120,6 +120,7 @@ async function main() {
       // Offer the AI card only while the host switch is on and the drawer is healthy
       aiCardsEnabled: cardsEnabled(),
       aiCardsAvailable: cardsAvailable(),
+      aiCardChoices: cardChoices(),
       suggestionsEnabled: suggestionsEnabled() && faceServiceConfigured(),
       selectScreen: selectScreen(),
       activeEvent: activeEvent ?? null,
@@ -227,6 +228,7 @@ async function main() {
   // Start cloud photo upload + email delivery (only runs when internet available)
   startCloudSync();
   startFaceService();
+  startCardRetries();
 
   // Start DynamoDB sync (only runs when internet available)
   startDynamoSync();

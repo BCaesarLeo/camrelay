@@ -43,7 +43,9 @@ export function SelectScreen() {
   const neighbours = useStore((s) => s.neighbours);
   const loadNeighbour = useStore((s) => s.loadNeighbour);
   const aiCardsAvailable = useStore((s) => s.aiCardsAvailable);
+  const aiCardChoices = useStore((s) => s.aiCardChoices);
   const requestCard = useStore((s) => s.requestCard);
+  const [pickingCard, setPickingCard] = useState(false);
   const cardError = useStore((s) => s.cardError);
 
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -182,11 +184,18 @@ export function SelectScreen() {
     </div>
   );
 
+  // First tap opens the picker; picking a style is the yes (that is what sends the photo off)
+  const pickCard = (choice: string) => {
+    if (!own.length) return;
+    setPickingCard(false);
+    requestCard(own[0].id, choice);
+  };
+  const picking = pickingCard && !drawingCard && own.length > 0;
   const cardOffer = aiCardsAvailable && !readyCards.length && (
     <div
-      className="offer"
-      style={{ position: "relative", cursor: drawingCard || !own.length ? "default" : "pointer" }}
-      onClick={() => !drawingCard && own.length && requestCard(own[0].id)}
+      className={"offer" + (picking ? " picking" : "")}
+      style={{ position: "relative", cursor: drawingCard || !own.length || picking ? "default" : "pointer" }}
+      onClick={() => !drawingCard && own.length && !picking && setPickingCard(true)}
     >
       <img src="/ai-cards/example.jpg" alt="" draggable={false} style={{ opacity: drawingCard ? 0.35 : 1 }} />
       {drawingCard && (
@@ -194,14 +203,29 @@ export function SelectScreen() {
           <i />
         </div>
       )}
-      <p>
-        <b>{drawingCard ? "Drawing your card…" : "✦ Tap to make our Halloween card"}</b>
-        {drawingCard
-          ? "About 20 seconds. It will appear here and be sent with your photos."
-          : failedCard || cardError
-            ? "It didn't work last time — tap to try again."
-            : "A fun illustrated card made from your first photo. Tapping sends that photo to Google's AI service to draw it."}
-      </p>
+      {picking ? (
+        <div className="choices">
+          <b>Pick a style and we'll draw it</b>
+          {aiCardChoices.map((c) => (
+            <button key={c.id} onClick={() => pickCard(c.id)}>
+              <span>{c.emoji}</span> {c.label}
+            </button>
+          ))}
+          <button className="no" onClick={() => setPickingCard(false)}>
+            Not now
+          </button>
+          <small>Picking one sends your first photo to Google's AI service to draw the card.</small>
+        </div>
+      ) : (
+        <p>
+          <b>{drawingCard ? "Drawing your card…" : "✦ Tap to make our Halloween card"}</b>
+          {drawingCard
+            ? "About 20 seconds. It will appear here and be sent with your photos."
+            : failedCard || cardError
+              ? "It didn't work last time — tap to try again."
+              : "A fun illustrated card made from your first photo. You pick the style next."}
+        </p>
+      )}
     </div>
   );
 

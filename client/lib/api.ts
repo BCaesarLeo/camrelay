@@ -85,6 +85,7 @@ export const api = {
       smsEnabled: boolean;
       aiCardsEnabled?: boolean;
       aiCardsAvailable?: boolean;
+      aiCardChoices?: { id: string; label: string; emoji: string }[];
       suggestionsEnabled?: boolean;
       selectScreen?: "new" | "classic";
     }>("/api/config"),
@@ -94,9 +95,9 @@ export const api = {
     request<{ enabled: boolean; photos: SuggestedPhoto[] }>(`/api/sessions/${sessionId}/suggestions`),
 
   // AI card: one per session, drawn from the photo the guest was looking at
-  requestCard: (sessionId: string, photoId: string) =>
+  requestCard: (sessionId: string, photoId: string, choice?: string) =>
     request<Photo>(`/api/sessions/${sessionId}/card`, {
       method: "POST",
-      body: JSON.stringify({ photoId }),
+      body: JSON.stringify({ photoId, choice }),
     }),
 };

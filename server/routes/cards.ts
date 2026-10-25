@@ -1,18 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import fs from "fs";
 import path from "path";
-import { requestCard, cardStats, updateCardSettings } from "../ai/cards.js";
+import { requestCard, cardStats, updateCardSettings, retryOwedCards } from "../ai/cards.js";
 
 const EXAMPLE = path.join(process.cwd(), "assets", "ai-cards", "example.jpg");
 
 export async function cardRoutes(app: FastifyInstance) {
   // Guest said yes: draw one card for this session from the photo they picked
-  app.post<{ Params: { id: string }; Body: { photoId?: string } }>(
+  app.post<{ Params: { id: string }; Body: { photoId?: string; choice?: string } }>(
     "/api/sessions/:id/card",
     async (req, reply) => {
       const photoId = req.body?.photoId;
       if (!photoId || typeof photoId !== "string") return reply.status(400).send({ error: "photoId required" });
-      const result = requestCard(req.params.id, photoId);
+      const choice = typeof req.body?.choice === "string" ? req.body.choice : undefined;
+      const result = requestCard(req.params.id, photoId, choice);
       if (!result.ok) return reply.status(result.status).send({ error: result.error });
       return result.photo;
     }
@@ -26,6 +27,9 @@ export async function cardRoutes(app: FastifyInstance) {
 
   // Host page: switch + banner text + health
   app.get("/api/settings/ai-cards", async () => cardStats());
+
+  // Draw the cards guests are still owed now rather than on the next timer pass
+  app.post("/api/settings/ai-cards/retry", async () => ({ started: retryOwedCards(), ...cardStats() }));
 
   app.post<{ Body: { enabled?: boolean; text?: string; theme?: string } }>("/api/settings/ai-cards", async (req) => {
     updateCardSettings({

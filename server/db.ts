@@ -109,6 +109,7 @@ const photoColumns = db.prepare("PRAGMA table_info(photos)").all() as { name: st
 for (const [name, type] of [
   ["kind", "TEXT NOT NULL DEFAULT 'photo'"], // 'photo' from the camera, 'card' drawn by AI
   ["source_photo_id", "TEXT"],
+  ["card_style", "TEXT"], // which costume/house the guest picked for a card
 ]) {
   if (!photoColumns.some((c) => c.name === name)) {
     db.exec(`ALTER TABLE photos ADD COLUMN ${name} ${type}`);
@@ -145,6 +146,8 @@ for (const [name, type] of [
   ["attempts", "INTEGER NOT NULL DEFAULT 0"],
   ["last_attempt_at", "TEXT"],
   ["delivery_error", "TEXT"],
+  ["card_followup", "TEXT"], // 'pending' = photos went out without the AI card, send it when ready; 'sent'; 'failed'
+  ["card_photo_id", "TEXT"],
 ]) {
   if (!contactColumns.some((c) => c.name === name)) {
     db.exec(`ALTER TABLE contacts ADD COLUMN ${name} ${type}`);

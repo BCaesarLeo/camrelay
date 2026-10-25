@@ -18,6 +18,7 @@ interface CardStats {
   pausedUntil: string | null;
   lastError: string | null;
   queued: number;
+  owed: number;
 }
 
 interface FaceStats {
@@ -352,7 +353,7 @@ export function HostView() {
             <div style={styles.statusRow}>
               <span style={styles.statusLabel}>Today</span>
               <span style={{ color: "#888", fontSize: 13 }}>
-                {cards.today} drawn · {cards.failed} failed · {cards.queued} in queue
+                {cards.today} drawn · {cards.failed} failed · {cards.queued} in queue{cards.owed ? ` · ${cards.owed} to send later` : ""}
               </span>
             </div>
             {cards.lastError && (

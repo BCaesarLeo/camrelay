@@ -30,8 +30,9 @@ interface Store {
   smsEnabled: boolean;
   // AI Halloween card — offered only while the host switch is on and the drawer is healthy
   aiCardsAvailable: boolean;
+  aiCardChoices: { id: string; label: string; emoji: string }[];
   cardError: string | null;
-  requestCard: (photoId: string) => Promise<void>;
+  requestCard: (photoId: string, choice?: string) => Promise<void>;
 
   // "Want these too?" — offered photos from other sessions; extras = the ones the guest tapped
   suggestionsEnabled: boolean;
@@ -101,13 +102,14 @@ export const useStore = create<Store>((set, get) => ({
   wifiPassword: null,
   smsEnabled: false,
   aiCardsAvailable: false,
+  aiCardChoices: [],
   cardError: null,
-  requestCard: async (photoId) => {
+  requestCard: async (photoId, choice) => {
     const { session } = get();
     if (!session) return;
     set({ cardError: null });
     try {
-      const photo = await api.requestCard(session.id, photoId);
+      const photo = await api.requestCard(session.id, photoId, choice);
       // Shows "drawing" at once; the finished card arrives over the websocket
       if (get().session?.id === session.id) get().addPhoto(photo);
     } catch (err) {
@@ -175,6 +177,7 @@ export const useStore = create<Store>((set, get) => ({
         wifiPassword: cfg.wifiPassword ?? null,
         smsEnabled: cfg.smsEnabled ?? false,
         aiCardsAvailable: cfg.aiCardsAvailable ?? false,
+        aiCardChoices: cfg.aiCardChoices ?? [],
         suggestionsEnabled: cfg.suggestionsEnabled ?? false,
         selectScreen: cfg.selectScreen === "classic" ? "classic" : "new",
       });

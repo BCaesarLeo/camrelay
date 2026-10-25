@@ -107,6 +107,8 @@ async function processQueue() {
         console.error(`[cloud] Delivery failed for ${contact.name}:`, msg);
       }
     }
+
+    await sendOwedCards();
   } catch (err) {
     console.error("[cloud] Sync error:", err);
   } finally {
@@ -134,8 +136,12 @@ async function processContact(contact: any) {
     !(p.kind === "card" && Date.now() - sqliteTimeMs(p.created_at) > CARD_WAIT_MS);
   if (photos.some(stillBusy)) return;
 
-  // A photo that never converted is left out rather than blocking the rest
+  // A photo that never converted is left out rather than blocking the rest.
+  // An AI card that failed or is taking too long goes the same way, except the guest is told
+  // it will follow and the contact is flagged so it is sent on its own once drawn (see sendOwedCards).
   const usable = photos.filter((p) => p.full_path && fs.existsSync(p.full_path));
+  const lateCard = photos.find((p) => p.kind === "card" && !usable.includes(p));
+  const cardNote = lateCard ? "Your Halloween card is still being drawn — we'll send it to you separately." : "";
   if (usable.length === 0) {
     throw new Error("None of the selected photos could be found on disk");
   }
@@ -212,7 +218,7 @@ async function processContact(contact: any) {
   // Email — skipped if an earlier attempt already got it out
   if (contact.email && !contact.email_sent) {
     try {
-      await sendEmail(contact.email, contact.name, eventName, downloadUrl, count);
+      await sendEmail(contact.email, contact.name, eventName, downloadUrl, count, cardNote);
       db.prepare("UPDATE contacts SET email_sent = 1, email_error = NULL WHERE id = ?").run(contact.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -242,7 +248,7 @@ async function processContact(contact: any) {
 
         await client.messages.create({
           body: isFirst
-            ? `${eventName}: Hi ${contact.name}! Here ${count !== 1 ? "are" : "is"} your ${count} photo${count !== 1 ? "s" : ""} from the event.\n\nDownload full-resolution: ${downloadUrl}`
+            ? `${eventName}: Hi ${contact.name}! Here ${count !== 1 ? "are" : "is"} your ${count} photo${count !== 1 ? "s" : ""} from the event.\n\nDownload full-resolution: ${downloadUrl}${cardNote ? `\n\n${cardNote}` : ""}`
             : `Photos continued (${batch + 1}-${Math.min(batch + 10, mmsUrls.length)} of ${mmsUrls.length})`,
           messagingServiceSid: msgSid,
           to: cleanPhone,
@@ -266,7 +272,115 @@ async function processContact(contact: any) {
   if (problems.length > 0) throw new Error(problems.join(" · "));
 
   db.prepare("UPDATE contacts SET synced = 1, delivery_error = NULL WHERE id = ?").run(contact.id);
+  if (lateCard) {
+    db.prepare("UPDATE contacts SET card_followup = 'pending', card_photo_id = ? WHERE id = ?").run(lateCard.id, contact.id);
+    console.log(`[cloud] ${contact.name} is owed their card ${lateCard.id} — will send it when drawn`);
+  }
   console.log(`[cloud] Delivered to ${contact.name} (email: ${!!contact.email}, sms: ${!!contact.phone})`);
+}
+
+// ---- cards that were owed ---------------------------------------------------------------------
+// Photos went out without the card; once the card is drawn (ai/cards.ts retries it) it is uploaded,
+// added to the guest's download page and sent as its own text and email.
+
+const followupTried = new Map<string, number>();
+
+async function sendOwedCards() {
+  const owed = db
+    .prepare(
+      `SELECT c.*, e.name AS event_name
+       FROM contacts c
+       JOIN photos p ON p.id = c.card_photo_id
+       LEFT JOIN events e ON c.event_id = e.id
+       WHERE c.card_followup = 'pending' AND c.synced = 1 AND p.status = 'ready'
+       ORDER BY c.created_at ASC LIMIT 3`
+    )
+    .all() as any[];
+
+  for (const contact of owed) {
+    const last = followupTried.get(contact.id) ?? 0;
+    if (Date.now() - last < 2 * 60_000) continue; // a failed attempt waits two minutes
+    followupTried.set(contact.id, Date.now());
+    try {
+      await sendOwedCard(contact);
+      db.prepare("UPDATE contacts SET card_followup = 'sent' WHERE id = ?").run(contact.id);
+      followupTried.delete(contact.id);
+      console.log(`[cloud] Sent the card that ${contact.name} was owed`);
+    } catch (err) {
+      console.error(`[cloud] Sending owed card to ${contact.name} failed:`, err instanceof Error ? err.message : err);
+    }
+  }
+}
+
+async function sendOwedCard(contact: any) {
+  const card = db.prepare("SELECT * FROM photos WHERE id = ?").get(contact.card_photo_id) as any;
+  if (!card?.full_path || !fs.existsSync(card.full_path)) throw new Error("Card file missing");
+  const eventName = contact.event_name || config.eventName;
+  const s3Prefix = `delivery/${contact.event_id}/${contact.id}`;
+  const fileBuffer = fs.readFileSync(card.full_path);
+
+  const key = `${s3Prefix}/${card.id}.jpg`;
+  await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: fileBuffer, ContentType: "image/jpeg" }));
+  const mmsKey = `mms/${contact.event_id}/${contact.id}/${card.id}.jpg`;
+  const mmsBuffer = await sharp(fileBuffer).rotate().resize(1600, null, { withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
+  await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: mmsKey, Body: mmsBuffer, ContentType: "image/jpeg" }));
+
+  // Rebuild the download page so the card sits with the photos that already went out
+  const photoIds: string[] = JSON.parse(contact.selected_photo_ids || "[]");
+  const urls = photoIds
+    .filter((id) => id !== card.id)
+    .map((id) => db.prepare("SELECT id, full_path FROM photos WHERE id = ?").get(id) as any)
+    .filter((p) => p?.full_path && fs.existsSync(p.full_path))
+    .map((p) => `${CDN_DOMAIN}/${s3Prefix}/${p.id}.jpg`);
+  urls.push(`${CDN_DOMAIN}/${key}`);
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: `${s3Prefix}/index.html`,
+      Body: generateDownloadPage(eventName, contact.name, urls),
+      ContentType: "text/html",
+    })
+  );
+  const downloadUrl = `${DOWNLOAD_SITE}/d/${contact.event_id}/${contact.id}`;
+  const problems: string[] = [];
+
+  if (contact.email) {
+    try {
+      await ses.send(
+        new SendEmailCommand({
+          Source: `${eventName} <${FROM_EMAIL}>`,
+          Destination: { ToAddresses: [contact.email] },
+          Message: {
+            Subject: { Data: `Your Halloween card from ${eventName}` },
+            Body: {
+              Html: { Data: generateEmailHtml(contact.name, eventName, downloadUrl, 1, "", "Your Halloween card is ready", "It has been added to your photos.") },
+              Text: { Data: `Hi ${contact.name},\n\nYour Halloween card from ${eventName} is ready and has been added to your photos.\n\nDownload it here: ${downloadUrl}` },
+            },
+          },
+        })
+      );
+    } catch (err) {
+      problems.push(`Email: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  if (contact.phone && smsEnabled()) {
+    try {
+      let cleanPhone = contact.phone.replace(/[^+\d]/g, "");
+      if (!cleanPhone.startsWith("+")) cleanPhone = "+1" + cleanPhone;
+      const client = getTwilio();
+      const msgSid = process.env.TWILIO_MESSAGING_SERVICE_SID;
+      if (!client || !msgSid) throw new Error("Twilio is not configured");
+      await client.messages.create({
+        body: `${eventName}: ${contact.name}, your Halloween card is ready! It has been added to your photos too: ${downloadUrl}`,
+        messagingServiceSid: msgSid,
+        to: cleanPhone,
+        mediaUrl: [`${CDN_DOMAIN}/${mmsKey}`],
+      });
+    } catch (err) {
+      problems.push(`Text: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+  if (problems.length) throw new Error(problems.join(" · "));
 }
 
 async function sendEmail(
@@ -274,7 +388,8 @@ async function sendEmail(
   name: string,
   eventName: string,
   downloadUrl: string,
-  photoCount: number
+  photoCount: number,
+  note = ""
 ) {
   await ses.send(
     new SendEmailCommand({
@@ -286,10 +401,10 @@ async function sendEmail(
         },
         Body: {
           Html: {
-            Data: generateEmailHtml(name, eventName, downloadUrl, photoCount),
+            Data: generateEmailHtml(name, eventName, downloadUrl, photoCount, note),
           },
           Text: {
-            Data: `Hi ${name},\n\nYour ${photoCount} photos from ${eventName} are ready!\n\nDownload them here: ${downloadUrl}\n\nThank you for attending!`,
+            Data: `Hi ${name},\n\nYour ${photoCount} photos from ${eventName} are ready!\n\nDownload them here: ${downloadUrl}${note ? `\n\n${note}` : ""}\n\nThank you for attending!`,
           },
         },
       },
@@ -301,8 +416,12 @@ function generateEmailHtml(
   name: string,
   eventName: string,
   downloadUrl: string,
-  photoCount: number
+  photoCount: number,
+  note = "",
+  heading = "Your photos are ready",
+  lead = ""
 ): string {
+  const intro = lead || `Hi ${name}, your ${photoCount} photo${photoCount !== 1 ? "s" : ""} from ${eventName} ${photoCount !== 1 ? "are" : "is"} ready to download.`;
   return `
 <!DOCTYPE html>
 <html>
@@ -313,8 +432,9 @@ function generateEmailHtml(
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:500px;">
         <tr><td style="padding:32px 0;text-align:center;">
           <p style="font-size:11px;font-weight:300;letter-spacing:3px;text-transform:uppercase;color:#444;margin:0 0 32px;">${eventName}</p>
-          <h1 style="font-size:28px;font-weight:300;color:#f0f0f0;margin:0 0 8px;">Your photos are ready</h1>
-          <p style="font-size:15px;color:#666;font-weight:300;margin:0 0 32px;">Hi ${name}, your ${photoCount} photo${photoCount !== 1 ? "s" : ""} from ${eventName} ${photoCount !== 1 ? "are" : "is"} ready to download.</p>
+          <h1 style="font-size:28px;font-weight:300;color:#f0f0f0;margin:0 0 8px;">${heading}</h1>
+          <p style="font-size:15px;color:#666;font-weight:300;margin:0 0 ${note ? 12 : 32}px;">${intro}</p>
+          ${note ? `<p style="font-size:14px;color:#8a7a52;font-weight:300;margin:0 0 32px;">${note}</p>` : ""}
           <a href="${downloadUrl}" style="display:inline-block;padding:16px 48px;background:#4353FF;color:#fff;text-decoration:none;font-size:15px;font-weight:400;letter-spacing:2px;text-transform:uppercase;">View Photos</a>
           <p style="font-size:12px;color:#333;font-weight:300;margin:32px 0 0;">This link will be available for 30 days.</p>
         </td></tr>
