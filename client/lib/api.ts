@@ -86,6 +86,7 @@ export const api = {
       aiCardsEnabled?: boolean;
       aiCardsAvailable?: boolean;
       suggestionsEnabled?: boolean;
+      selectScreen?: "new" | "classic";
     }>("/api/config"),
 
   // "Want these too?" — photos from other sessions showing the same people

@@ -80,3 +80,97 @@ button {
 
 /* AI card offer spinner */
 @keyframes aicard-spin { to { transform: rotate(360deg); } }
+
+/* ---- Selection screen (ported from the approved mockup) ---------------------------------- */
+.sel { height: 100%; display: flex; flex-direction: column; background: #050505; color: #f0f0f0; user-select: none; -webkit-user-select: none; }
+.sel button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.sel .top { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px; }
+.sel .back { min-height: 48px; border: 1px solid #2a2a2a; color: #888; padding: 10px 22px 10px 16px; font-size: 15px; letter-spacing: .05em; }
+.sel .label { font-size: 13px; font-weight: 300; letter-spacing: .12em; text-transform: uppercase; color: #555; text-align: center; }
+.sel .label b { color: #333; font-weight: 300; margin-left: 8px; }
+.sel .scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 24px 24px; }
+.sel .head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; padding: 20px 4px 12px; }
+.sel .head h2 { font-size: 13px; font-weight: 400; letter-spacing: .12em; text-transform: uppercase; color: #e0e0e0; margin: 0; }
+.sel .head p { font-size: 13px; font-weight: 300; color: #666; margin: 0; }
+.sel .head .all { margin-left: auto; min-height: 44px; border: 1px solid #2a2a2a; color: #888; padding: 8px 18px; font-size: 13px; letter-spacing: .06em; }
+.sel .want h2 { color: #2dd4a8; }
+.sel .grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; --h: clamp(190px, 30vh, 300px); }
+.sel .grid.small { --h: clamp(130px, 19vh, 190px); }
+.sel .tile { width: min-content; border: 3px solid transparent; background: #111; cursor: pointer; transition: border-color .15s; }
+.sel .frame { position: relative; }
+.sel .tile img.photo { display: block; height: var(--h); width: auto; max-width: calc(100vw - 54px); object-fit: contain; transition: filter .2s, opacity .2s; pointer-events: none; }
+.sel .tile.on { border-color: #2dd4a8; }
+.sel .tile:not(.on) img.photo { filter: saturate(.5) brightness(.8); opacity: .65; }
+.sel .tick { pointer-events: none; position: absolute; top: 8px; right: 8px; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.85); }
+.sel .tile.on .tick { background: #2dd4a8; border-color: #2dd4a8; }
+.sel .tick svg { opacity: 0; width: 16px; height: 16px; } .sel .tile.on .tick svg { opacity: 1; }
+.sel .view { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 46px; border-top: 1px solid #1e1e1e; color: #9a9a9a; font-size: 13px; letter-spacing: .06em; }
+.sel .view svg { width: 16px; height: 16px; flex-shrink: 0; }
+.sel .view:active { background: #1a1a1a; }
+.sel .cap { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 6px 8px; font-size: 12px; line-height: 1.3; color: #bbb; }
+.sel .cap b { font-weight: 400; flex: 1; min-width: 0; }
+.sel .cap span { color: #666; width: 100%; }
+.sel .grid.small .tick { width: 36px; height: 36px; }
+.sel .tile.rendering { cursor: default; }
+.sel .tile .spark { pointer-events: none; position: absolute; left: 8px; top: 8px; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(9,60,109,.85); border: 1px solid #d4ba81; color: #f3dca6; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.sel .offer { display: flex; flex-direction: column; justify-content: flex-start; width: min-content; min-width: 200px; border: 1px solid #d4ba81; background: rgba(9,60,109,.92); color: #f3dca6; border-radius: 4px; padding: 10px; cursor: pointer; }
+.sel .offer img { display: block; height: calc(var(--h) - 20px); width: auto; object-fit: contain; pointer-events: none; }
+.sel .offer p { margin: 8px 0 0; font-size: 13px; line-height: 1.3; max-width: 100%; }
+.sel .offer p b { display: block; color: #fff; font-weight: 500; margin-bottom: 4px; }
+.sel .offer .spin { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.sel .offer .spin i { width: 28px; height: 28px; border-radius: 50%; border: 3px solid #d4ba81; border-right-color: transparent; animation: aicard-spin 1s linear infinite; }
+.sel .more { display: block; width: 100%; min-height: 64px; margin-top: 20px; padding: 16px; border: 1px dashed #2a2a2a; color: #888; font-size: 14px; letter-spacing: .04em; }
+.sel .none { padding: 4px 4px 0; font-size: 14px; font-weight: 300; color: #555; margin: 0; }
+.sel .bar { flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 14px 24px max(16px, env(safe-area-inset-bottom)); border-top: 1px solid #1a1a1a; background: #0a0a0a; }
+.sel .bar p { font-size: 13px; font-weight: 300; color: #777; flex: 1; min-width: 0; margin: 0; }
+.sel .bar p b { color: #2dd4a8; font-weight: 400; }
+.sel .go { flex-shrink: 0; min-height: 64px; padding: 18px 40px; background: #4353ff; color: #fff; font-size: 14px; letter-spacing: .12em; text-transform: uppercase; }
+.sel .go:disabled { opacity: .4; }
+.sel .empty { padding: 60px 0; text-align: center; color: #444; font-weight: 300; }
+
+.sel .light { position: fixed; inset: 0; z-index: 10; background: #050505; display: none; flex-direction: column; }
+.sel .light.show { display: flex; }
+.sel .light .bartop { flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: max(14px, env(safe-area-inset-top)) 20px 6px; }
+.sel .light .close { display: flex; align-items: center; gap: 8px; min-height: 60px; padding: 0 30px 0 20px; border: 1px solid #3a3a3a; background: #141414; color: #f0f0f0; font-size: 18px; letter-spacing: .04em; }
+.sel .light .close svg { width: 22px; height: 22px; }
+.sel .light .where { flex: 1; min-width: 0; text-align: right; font-size: 13px; font-weight: 300; color: #777; margin: 0; }
+.sel .light .stage { flex: 1; min-height: 0; position: relative; overflow: hidden; touch-action: pan-y; overscroll-behavior: none; }
+.sel .slide { position: absolute; left: 50%; top: 50%; padding: 0; border: 4px solid transparent; background: #111; will-change: transform, filter; }
+.sel .slide img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.sel .slide.card { display: block; padding: 0; background: #0d0d0d; border: none; color: #f5f3ee; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.sel .slide.card .in { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 34px 28px 84px; }
+.sel .slide.card::before { content: ""; position: absolute; inset: 14px; border: 1px solid rgba(255,255,255,.16); pointer-events: none; }
+.sel .slide.card .eyebrow { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: #8d8a84; }
+.sel .slide.card .eyebrow::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #2dd4a8; }
+.sel .slide.card .eyebrow.plain::before { background: #5c5a56; }
+.sel .slide.card .mid { display: flex; flex-direction: column; align-items: center; }
+.sel .slide.card b { display: block; font-size: 34px; font-weight: 800; line-height: 1.05; letter-spacing: -.03em; text-wrap: balance; }
+.sel .slide.card .rule { width: 40px; height: 4px; margin: 16px 0 14px; background: #2dd4a8; }
+.sel .slide.card .rule.plain { background: #f5f3ee; }
+.sel .slide.card .mid span { font-size: 18px; font-weight: 600; line-height: 1.3; letter-spacing: -.01em; color: #e4e2dc; text-wrap: balance; }
+.sel .slide.card .mid small { margin-top: 4px; font-size: 14px; font-weight: 400; line-height: 1.35; color: #8d8a84; text-wrap: balance; }
+.sel .slide.card .foot { position: absolute; left: 30px; right: 30px; bottom: 30px; display: flex; align-items: center; justify-content: center; gap: 8px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,.14); white-space: nowrap; font-size: 14px; font-weight: 500; color: #a09d97; }
+.sel .slide.card .foot svg { width: 18px; height: 18px; flex-shrink: 0; }
+.sel .light .choose.action { background: #4353ff; border-color: #4353ff; animation: none; }
+.sel .light .choose.action i { display: none; }
+.sel .slide.cur { z-index: 2; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+.sel .slide.on { border-color: #2dd4a8; }
+.sel .slide .mark { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.85); pointer-events: none; transform: scale(var(--mark, 1)); transform-origin: top right; }
+.sel .slide.on .mark { background: #2dd4a8; border-color: #2dd4a8; }
+.sel .slide .mark svg { width: 20px; height: 20px; opacity: 0; } .sel .slide.on .mark svg { opacity: 1; }
+@keyframes sel-ring { 0% { box-shadow: 0 0 0 0 rgba(45,212,168,.7); } 100% { box-shadow: 0 0 0 26px rgba(45,212,168,0); } }
+@keyframes sel-breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); } 50% { box-shadow: 0 0 0 8px rgba(255,255,255,.16); } }
+@keyframes sel-pop { 0% { transform: scale(1); } 40% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.sel .light .close.call { border-color: #2dd4a8; animation: sel-ring 1s ease-out infinite; }
+.sel .light .choose:not(.on):not(.action) { animation: sel-breathe 1.8s ease-in-out infinite; }
+.sel .light .choose.pop { animation: sel-pop .35s ease-out; }
+@media (prefers-reduced-motion: reduce) { .sel .light * { animation: none !important; } }
+.sel .light .foot { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px max(18px, env(safe-area-inset-bottom)); }
+.sel .light .choose { display: flex; align-items: center; justify-content: center; gap: 14px; flex: 1; max-width: 560px; min-height: 76px; border: 2px solid rgba(255,255,255,.6); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
+.sel .light .choose i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; }
+.sel .light .choose i svg { opacity: 0; width: 14px; height: 14px; }
+.sel .light .choose.on { background: #2dd4a8; border-color: #2dd4a8; color: #fff; }
+.sel .light .choose.on i { background: #fff; } .sel .light .choose.on i svg { opacity: 1; stroke: #2dd4a8; }
+.sel .zoomhint { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); z-index: 30; padding: 10px 18px; border-radius: 999px; background: rgba(0,0,0,.72); color: #e8e8e8; font-size: 14px; white-space: nowrap; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.sel .light.zoomed .zoomhint { opacity: 1; }
+.sel .light .bartop, .sel .light .foot { position: relative; z-index: 25; background: #050505; }

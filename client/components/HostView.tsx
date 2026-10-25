@@ -52,6 +52,7 @@ export function HostView() {
   const [switching, setSwitching] = useState(false);
   const [cards, setCards] = useState<CardStats | null>(null);
   const [faces, setFaces] = useState<FaceStats | null>(null);
+  const [selectScreen, setSelectScreen] = useState<"new" | "classic" | null>(null);
   const [cardText, setCardText] = useState<string | null>(null);
   useEffect(() => {
     loadConfig();
@@ -63,18 +64,20 @@ export function HostView() {
 
   const refreshAll = async () => {
     try {
-      const [evts, activeEvt, cap, cardStats, faceStats] = await Promise.all([
+      const [evts, activeEvt, cap, cardStats, faceStats, sel] = await Promise.all([
         fetch("/api/events").then((r) => r.json()),
         fetch("/api/events/active").then((r) => r.ok ? r.json() : null),
         fetch("/api/capture/status").then((r) => r.json()),
         fetch("/api/settings/ai-cards").then((r) => (r.ok ? r.json() : null)).catch(() => null),
         fetch("/api/settings/suggestions").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/settings/select-screen").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       ]);
       setEvents(evts);
       setActiveEvent(activeEvt);
       setCapture(cap);
       setCards(cardStats);
       setFaces(faceStats);
+      if (sel) setSelectScreen(sel.selectScreen);
       loadSessions();
     } catch {}
   };
@@ -119,6 +122,17 @@ export function HostView() {
         body: JSON.stringify(body),
       });
       if (res.ok) setCards(await res.json());
+    } catch {}
+  };
+
+  const updateSelectScreen = async (v: "new" | "classic") => {
+    try {
+      const res = await fetch("/api/settings/select-screen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selectScreen: v }),
+      });
+      if (res.ok) setSelectScreen((await res.json()).selectScreen);
     } catch {}
   };
 
@@ -247,6 +261,28 @@ export function HostView() {
             <span style={styles.modeBtnDesc}>QR code download</span>
           </button>
         </div>
+      </div>
+
+      {/* Selection screen */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>Selection screen</p>
+        <div style={styles.modeSelector}>
+          <button
+            onClick={() => updateSelectScreen("new")}
+            style={{ ...styles.modeBtn, ...(selectScreen === "new" ? styles.modeBtnActive : {}) }}
+          >
+            <span style={styles.modeBtnTitle}>New</span>
+            <span style={styles.modeBtnDesc}>Grid of whole photos · swipe to view large</span>
+          </button>
+          <button
+            onClick={() => updateSelectScreen("classic")}
+            style={{ ...styles.modeBtn, ...(selectScreen === "classic" ? styles.modeBtnActive : {}) }}
+          >
+            <span style={styles.modeBtnTitle}>Classic</span>
+            <span style={styles.modeBtnDesc}>Big photo with arrows and filmstrip</span>
+          </button>
+        </div>
+        <p style={styles.importHint}>Guests pick it up on their next session. Switch back here at any time if the new screen misbehaves on the iPads.</p>
       </div>
 
       {/* AI Halloween cards */}

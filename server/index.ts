@@ -16,7 +16,7 @@ import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
 import { cardRoutes } from "./routes/cards.js";
-import { suggestionRoutes } from "./routes/suggestions.js";
+import { suggestionRoutes, selectScreen } from "./routes/suggestions.js";
 import { startFaceService, suggestionsEnabled, faceServiceConfigured } from "./faces/index.js";
 import { cardsAvailable, cardsEnabled, failOrphanedCards } from "./ai/cards.js";
 import { findMeRoutes } from "./routes/findme.js";
@@ -111,6 +111,7 @@ async function main() {
       aiCardsEnabled: cardsEnabled(),
       aiCardsAvailable: cardsAvailable(),
       suggestionsEnabled: suggestionsEnabled() && faceServiceConfigured(),
+      selectScreen: selectScreen(),
       activeEvent: activeEvent ?? null,
     };
   });

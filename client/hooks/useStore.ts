@@ -12,6 +12,11 @@ export interface GuestContact {
 
 export type MoveTarget = { sessionId: string } | { newGroup: true };
 
+export interface NeighbourGroup {
+  session: Session;
+  photos: SuggestedPhoto[];
+}
+
 interface Store {
   // Navigation
   screen: Screen;
@@ -34,6 +39,13 @@ interface Store {
   extras: string[];
   loadSuggestions: () => Promise<void>;
   toggleExtra: (photoId: string) => void;
+
+  // The sessions shot just before / after this one, loaded only when the guest asks
+  neighbours: { before: NeighbourGroup | null; after: NeighbourGroup | null };
+  loadNeighbour: (when: "before" | "after") => Promise<void>;
+
+  // Which selection screen the host chose: the new grid + swipe view, or the classic one
+  selectScreen: "new" | "classic";
   deliveryMode: "online" | "local";
   setDeliveryMode: (mode: "online" | "local") => void;
   loadConfig: () => Promise<void>;
@@ -114,7 +126,13 @@ export const useStore = create<Store>((set, get) => ({
     try {
       const res = await api.getSuggestions(session.id);
       if (get().session?.id !== session.id) return;
-      const ids = new Set(res.photos.map((p) => p.id));
+      // Keep every extra that is still on offer: a face match, or a neighbouring session's photo
+      const { neighbours } = get();
+      const ids = new Set([
+        ...res.photos.map((p) => p.id),
+        ...(neighbours.before?.photos ?? []).map((p) => p.id),
+        ...(neighbours.after?.photos ?? []).map((p) => p.id),
+      ]);
       set({ suggestions: res.photos, extras: get().extras.filter((id) => ids.has(id)) });
     } catch {
       // No suggestions is always a fine answer
@@ -124,6 +142,27 @@ export const useStore = create<Store>((set, get) => ({
     set((state) => ({
       extras: state.extras.includes(photoId) ? state.extras.filter((id) => id !== photoId) : [...state.extras, photoId],
     })),
+
+  neighbours: { before: null, after: null },
+  loadNeighbour: async (when) => {
+    const { session, sessions } = get();
+    if (!session) return;
+    const n = session.sessionNumber + (when === "before" ? -1 : 1);
+    const target = sessions.find((s) => s.sessionNumber === n && s.eventId === session.eventId);
+    if (!target) return;
+    try {
+      const photos = await api.getPhotos(target.id);
+      if (get().session?.id !== session.id) return;
+      const list: SuggestedPhoto[] = photos
+        .filter((p) => p.status === "ready" && p.kind !== "card")
+        .map((p) => ({ ...p, selected: false, sessionNumber: target.sessionNumber, sessionTime: target.createdAt, score: 0, people: 0 }));
+      set({ neighbours: { ...get().neighbours, [when]: { session: target, photos: list } } });
+    } catch {
+      // Leave the offer in place; the guest can tap again
+    }
+  },
+
+  selectScreen: "new",
   deliveryMode: "online",
   setDeliveryMode: (mode) => set({ deliveryMode: mode }),
   loadConfig: async () => {
@@ -137,6 +176,7 @@ export const useStore = create<Store>((set, get) => ({
         smsEnabled: cfg.smsEnabled ?? false,
         aiCardsAvailable: cfg.aiCardsAvailable ?? false,
         suggestionsEnabled: cfg.suggestionsEnabled ?? false,
+        selectScreen: cfg.selectScreen === "classic" ? "classic" : "new",
       });
     } catch {
       // Use defaults
@@ -158,7 +198,7 @@ export const useStore = create<Store>((set, get) => ({
 
   session: null,
   openSession: (session) => {
-    set({ session, photos: [], downloadInfo: null, cardError: null, suggestions: [], extras: [], screen: "session" });
+    set({ session, photos: [], downloadInfo: null, cardError: null, suggestions: [], extras: [], neighbours: { before: null, after: null }, screen: "session" });
     // Re-check the card switch each time a guest starts, so the host can turn it on/off live
     get().loadConfig();
   },
@@ -269,6 +309,7 @@ export const useStore = create<Store>((set, get) => ({
       downloadInfo: null,
       suggestions: [],
       extras: [],
+      neighbours: { before: null, after: null },
     });
     // Refresh sessions list
     get().loadSessions();

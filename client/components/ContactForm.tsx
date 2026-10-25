@@ -31,11 +31,15 @@ export function ContactForm() {
   // most) and sends the photos without it if it fails
   const extras = useStore((s) => s.extras);
   const suggestions = useStore((s) => s.suggestions);
+  const neighbours = useStore((s) => s.neighbours);
+  const selectScreen = useStore((s) => s.selectScreen);
   const own = photos.filter(
     (p) => p.selected && (p.status === "ready" || (p.kind === "card" && p.status === "processing"))
   );
-  // Photos from other sessions the guest tapped under "Want these too?"
-  const selected = [...own, ...suggestions.filter((p) => extras.includes(p.id))];
+  // Photos from other sessions the guest tapped ("Want these too?" or a neighbouring session)
+  const others = [...suggestions, ...(neighbours.before?.photos ?? []), ...(neighbours.after?.photos ?? [])];
+  const selected = [...own, ...others.filter((p) => extras.includes(p.id))];
+  const backScreen = selectScreen === "classic" ? "review" : "session";
   const isOnline = deliveryMode === "online";
   const smsEnabled = useStore((s) => s.smsEnabled);
 
@@ -160,7 +164,7 @@ export function ContactForm() {
         style={styles.container}
       >
         <div style={styles.content}>
-          <button onClick={() => setScreen("review")} style={styles.backBtn}>
+          <button onClick={() => setScreen(backScreen)} style={styles.backBtn}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <polyline points="15 18 9 12 15 6" />
             </svg>
@@ -212,7 +216,7 @@ export function ContactForm() {
       style={styles.container}
     >
       <div style={styles.content}>
-        <button onClick={() => setScreen("review")} style={styles.backBtn}>
+        <button onClick={() => setScreen(backScreen)} style={styles.backBtn}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <polyline points="15 18 9 12 15 6" />
           </svg>

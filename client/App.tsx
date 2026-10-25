@@ -4,6 +4,7 @@ import { useStore } from "./hooks/useStore";
 import { useWebSocket } from "./hooks/useWebSocket";
 import { SessionsList } from "./components/SessionsList";
 import { SessionView } from "./components/SessionView";
+import { SelectScreen } from "./components/SelectScreen";
 import { ReviewScreen } from "./components/ReviewScreen";
 import { RegroupScreen } from "./components/RegroupScreen";
 import { ContactForm } from "./components/ContactForm";
@@ -14,6 +15,7 @@ import { GuestBanner } from "./components/GuestBanner";
 
 export function App() {
   const screen = useStore((s) => s.screen);
+  const selectScreen = useStore((s) => s.selectScreen);
   const loadConfig = useStore((s) => s.loadConfig);
   const [mode, setMode] = useState<"guest" | "host" | "kiosk">("guest");
 
@@ -40,7 +42,7 @@ export function App() {
       <div style={{ flex: 1, minHeight: 0 }}>
         <AnimatePresence mode="wait">
           {screen === "sessions" && <SessionsList key="sessions" kiosk={mode === "kiosk"} />}
-          {screen === "session" && <SessionView key="session" />}
+          {screen === "session" && (selectScreen === "classic" ? <SessionView key="session" /> : <SelectScreen key="select" />)}
           {screen === "review" && <ReviewScreen key="review" />}
           {screen === "regroup" && <RegroupScreen key="regroup" />}
           {screen === "contact" && <ContactForm key="contact" />}
