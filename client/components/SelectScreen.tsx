@@ -207,7 +207,7 @@ export function SelectScreen() {
         <div className="choices">
           <b>Pick a style and we'll draw it</b>
           {aiCardChoices.map((c) => (
-            <button key={c.id} onClick={() => pickCard(c.id)}>
+            <button key={c.id} className={c.id === "random" ? "wide" : ""} onClick={() => pickCard(c.id)}>
               <span>{c.emoji}</span> {c.label}
             </button>
           ))}
