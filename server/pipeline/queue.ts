@@ -4,6 +4,7 @@ import { convertPhoto, isSupportedImage } from "./convert.js";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { broadcast } from "../ws/index.js";
+import { indexPhoto } from "../faces/index.js";
 import path from "path";
 import type { Photo } from "../../shared/types.js";
 
@@ -103,6 +104,13 @@ export function enqueuePhoto(filePath: string) {
       };
 
       broadcast(sessionId, { type: "photo_added", photo });
+
+      // Face index for "Want these too?" — runs after the photo is already usable
+      try {
+        indexPhoto(photoId);
+      } catch (e) {
+        console.error("[faces] indexPhoto:", e);
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error(`Failed to convert ${filename}:`, message);

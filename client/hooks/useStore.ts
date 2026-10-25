@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Session, Photo, DownloadInfo } from "../../shared/types";
+import type { Session, Photo, DownloadInfo, SuggestedPhoto } from "../../shared/types";
 import { api } from "../lib/api";
 
 type Screen = "sessions" | "session" | "review" | "regroup" | "contact" | "qr" | "findme";
@@ -27,6 +27,13 @@ interface Store {
   aiCardsAvailable: boolean;
   cardError: string | null;
   requestCard: (photoId: string) => Promise<void>;
+
+  // "Want these too?" — offered photos from other sessions; extras = the ones the guest tapped
+  suggestionsEnabled: boolean;
+  suggestions: SuggestedPhoto[];
+  extras: string[];
+  loadSuggestions: () => Promise<void>;
+  toggleExtra: (photoId: string) => void;
   deliveryMode: "online" | "local";
   setDeliveryMode: (mode: "online" | "local") => void;
   loadConfig: () => Promise<void>;
@@ -98,6 +105,25 @@ export const useStore = create<Store>((set, get) => ({
       if (msg.startsWith("503")) set({ aiCardsAvailable: false });
     }
   },
+  suggestionsEnabled: false,
+  suggestions: [],
+  extras: [],
+  loadSuggestions: async () => {
+    const { session, suggestionsEnabled } = get();
+    if (!session || !suggestionsEnabled) return;
+    try {
+      const res = await api.getSuggestions(session.id);
+      if (get().session?.id !== session.id) return;
+      const ids = new Set(res.photos.map((p) => p.id));
+      set({ suggestions: res.photos, extras: get().extras.filter((id) => ids.has(id)) });
+    } catch {
+      // No suggestions is always a fine answer
+    }
+  },
+  toggleExtra: (photoId) =>
+    set((state) => ({
+      extras: state.extras.includes(photoId) ? state.extras.filter((id) => id !== photoId) : [...state.extras, photoId],
+    })),
   deliveryMode: "online",
   setDeliveryMode: (mode) => set({ deliveryMode: mode }),
   loadConfig: async () => {
@@ -110,6 +136,7 @@ export const useStore = create<Store>((set, get) => ({
         wifiPassword: cfg.wifiPassword ?? null,
         smsEnabled: cfg.smsEnabled ?? false,
         aiCardsAvailable: cfg.aiCardsAvailable ?? false,
+        suggestionsEnabled: cfg.suggestionsEnabled ?? false,
       });
     } catch {
       // Use defaults
@@ -131,7 +158,7 @@ export const useStore = create<Store>((set, get) => ({
 
   session: null,
   openSession: (session) => {
-    set({ session, photos: [], downloadInfo: null, cardError: null, screen: "session" });
+    set({ session, photos: [], downloadInfo: null, cardError: null, suggestions: [], extras: [], screen: "session" });
     // Re-check the card switch each time a guest starts, so the host can turn it on/off live
     get().loadConfig();
   },
@@ -240,6 +267,8 @@ export const useStore = create<Store>((set, get) => ({
       session: null,
       photos: [],
       downloadInfo: null,
+      suggestions: [],
+      extras: [],
     });
     // Refresh sessions list
     get().loadSessions();

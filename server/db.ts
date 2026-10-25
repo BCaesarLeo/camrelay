@@ -115,6 +115,28 @@ for (const [name, type] of [
   }
 }
 
+// Faces found in each photo (YuNet + SFace, see face/server.py) for "Want these too?"
+db.exec(`
+  CREATE TABLE IF NOT EXISTS faces (
+    id TEXT PRIMARY KEY,
+    photo_id TEXT NOT NULL REFERENCES photos(id),
+    session_id TEXT NOT NULL,
+    event_id TEXT NOT NULL,
+    box TEXT NOT NULL,
+    score REAL NOT NULL,
+    emb BLOB NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_faces_event ON faces(event_id);
+  CREATE INDEX IF NOT EXISTS idx_faces_photo ON faces(photo_id);
+`);
+for (const [name, type] of [["face_status", "TEXT NOT NULL DEFAULT 'pending'"]]) {
+  // pending → done | none (no faces) | failed
+  if (!photoColumns.some((c) => c.name === name)) {
+    db.exec(`ALTER TABLE photos ADD COLUMN ${name} ${type}`);
+  }
+}
+
 // Small key/value store for host-page switches that must survive a restart
 db.exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)");
 

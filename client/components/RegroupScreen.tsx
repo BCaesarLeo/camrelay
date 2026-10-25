@@ -579,6 +579,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     aspectRatio: "3 / 2",
     objectFit: "cover",
+    objectPosition: "center top",
+    background: "#0a0a0a",
     display: "block",
     pointerEvents: "none",
   },

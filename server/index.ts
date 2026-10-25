@@ -16,6 +16,8 @@ import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
 import { cardRoutes } from "./routes/cards.js";
+import { suggestionRoutes } from "./routes/suggestions.js";
+import { startFaceService, suggestionsEnabled, faceServiceConfigured } from "./faces/index.js";
 import { cardsAvailable, cardsEnabled, failOrphanedCards } from "./ai/cards.js";
 import { findMeRoutes } from "./routes/findme.js";
 import { startCapture } from "./capture/index.js";
@@ -39,6 +41,8 @@ async function main() {
 
   // Run migrations
   migrate();
+  // A card left half-drawn by the previous run must not hold up anyone's delivery
+  failOrphanedCards();
   console.log("Database ready");
 
   const app = Fastify({ logger: false });
@@ -92,6 +96,7 @@ async function main() {
   await app.register(contactRoutes);
   await app.register(findMeRoutes);
   await app.register(cardRoutes);
+  await app.register(suggestionRoutes);
 
   // Config endpoint for frontend
   app.get("/api/config", async () => {
@@ -105,6 +110,7 @@ async function main() {
       // Offer the AI card only while the host switch is on and the drawer is healthy
       aiCardsEnabled: cardsEnabled(),
       aiCardsAvailable: cardsAvailable(),
+      suggestionsEnabled: suggestionsEnabled() && faceServiceConfigured(),
       activeEvent: activeEvent ?? null,
     };
   });
@@ -209,6 +215,7 @@ async function main() {
 
   // Start cloud photo upload + email delivery (only runs when internet available)
   startCloudSync();
+  startFaceService();
 
   // Start DynamoDB sync (only runs when internet available)
   startDynamoSync();

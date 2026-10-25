@@ -1,4 +1,4 @@
-import type { Session, Photo, DownloadInfo } from "../../shared/types";
+import type { Session, Photo, DownloadInfo, SuggestedPhoto } from "../../shared/types";
 
 const BASE = "";
 
@@ -85,7 +85,12 @@ export const api = {
       smsEnabled: boolean;
       aiCardsEnabled?: boolean;
       aiCardsAvailable?: boolean;
+      suggestionsEnabled?: boolean;
     }>("/api/config"),
+
+  // "Want these too?" — photos from other sessions showing the same people
+  getSuggestions: (sessionId: string) =>
+    request<{ enabled: boolean; photos: SuggestedPhoto[] }>(`/api/sessions/${sessionId}/suggestions`),
 
   // AI card: one per session, drawn from the photo the guest was looking at
   requestCard: (sessionId: string, photoId: string) =>

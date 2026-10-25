@@ -37,6 +37,14 @@ export interface Photo {
   createdAt: string;
 }
 
+// A photo from another session that shows the same people — offered, never pre-selected
+export interface SuggestedPhoto extends Photo {
+  sessionNumber: number;
+  sessionTime: string;
+  score: number;
+  people: number;
+}
+
 export interface DownloadInfo {
   downloadUrl: string;
   qrDataUrl: string;

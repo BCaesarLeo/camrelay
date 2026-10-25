@@ -19,6 +19,16 @@ interface CardStats {
   queued: number;
 }
 
+interface FaceStats {
+  enabled: boolean;
+  configured: boolean;
+  serviceUp: boolean;
+  faces: number;
+  pending: number;
+  queued: number;
+  lastError: string | null;
+}
+
 interface CaptureStatus {
   mode: "sony" | "nikon" | "watch";
   active: boolean;
@@ -41,6 +51,7 @@ export function HostView() {
   const [capture, setCapture] = useState<CaptureStatus | null>(null);
   const [switching, setSwitching] = useState(false);
   const [cards, setCards] = useState<CardStats | null>(null);
+  const [faces, setFaces] = useState<FaceStats | null>(null);
   const [cardText, setCardText] = useState<string | null>(null);
   useEffect(() => {
     loadConfig();
@@ -52,16 +63,18 @@ export function HostView() {
 
   const refreshAll = async () => {
     try {
-      const [evts, activeEvt, cap, cardStats] = await Promise.all([
+      const [evts, activeEvt, cap, cardStats, faceStats] = await Promise.all([
         fetch("/api/events").then((r) => r.json()),
         fetch("/api/events/active").then((r) => r.ok ? r.json() : null),
         fetch("/api/capture/status").then((r) => r.json()),
         fetch("/api/settings/ai-cards").then((r) => (r.ok ? r.json() : null)).catch(() => null),
+        fetch("/api/settings/suggestions").then((r) => (r.ok ? r.json() : null)).catch(() => null),
       ]);
       setEvents(evts);
       setActiveEvent(activeEvt);
       setCapture(cap);
       setCards(cardStats);
+      setFaces(faceStats);
       loadSessions();
     } catch {}
   };
@@ -106,6 +119,17 @@ export function HostView() {
         body: JSON.stringify(body),
       });
       if (res.ok) setCards(await res.json());
+    } catch {}
+  };
+
+  const updateFaces = async (enabled: boolean) => {
+    try {
+      const res = await fetch("/api/settings/suggestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled }),
+      });
+      if (res.ok) setFaces(await res.json());
     } catch {}
   };
 
@@ -280,6 +304,49 @@ export function HostView() {
             </div>
             {cards.lastError && (
               <p style={{ ...styles.importHint, color: "#a05050", marginTop: 4 }}>Last error: {cards.lastError}</p>
+            )}
+          </>
+        ) : (
+          <p style={styles.noActive}>Loading…</p>
+        )}
+      </div>
+
+      {/* "Want these too?" face suggestions */}
+      <div style={styles.section}>
+        <p style={styles.sectionLabel}>Want these too?</p>
+        {faces ? (
+          <>
+            <div style={styles.modeSelector}>
+              <button
+                onClick={() => updateFaces(false)}
+                style={{ ...styles.modeBtn, ...(!faces.enabled ? styles.modeBtnActive : {}) }}
+              >
+                <span style={styles.modeBtnTitle}>Off</span>
+                <span style={styles.modeBtnDesc}>No suggestions</span>
+              </button>
+              <button
+                onClick={() => updateFaces(true)}
+                disabled={!faces.configured}
+                style={{ ...styles.modeBtn, ...(faces.enabled ? styles.modeBtnActive : {}), opacity: faces.configured ? 1 : 0.4 }}
+              >
+                <span style={styles.modeBtnTitle}>On</span>
+                <span style={styles.modeBtnDesc}>Offer photos of the same people from other sessions</span>
+              </button>
+            </div>
+            <div style={styles.statusRow}>
+              <span style={styles.statusLabel}>Face service</span>
+              <span style={{ color: !faces.configured ? "#F06060" : faces.serviceUp ? "#2dd4a8" : "#F06060", fontSize: 13 }}>
+                {!faces.configured ? "Not set up" : faces.serviceUp ? "Running" : "Down — suggestions paused"}
+              </span>
+            </div>
+            <div style={styles.statusRow}>
+              <span style={styles.statusLabel}>This event</span>
+              <span style={{ color: "#888", fontSize: 13 }}>
+                {faces.faces} faces indexed · {faces.pending} photos waiting
+              </span>
+            </div>
+            {faces.lastError && (
+              <p style={{ ...styles.importHint, color: "#a05050", marginTop: 4 }}>Last error: {faces.lastError}</p>
             )}
           </>
         ) : (

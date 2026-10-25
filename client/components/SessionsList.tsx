@@ -490,6 +490,8 @@ const styles: Record<string, React.CSSProperties> = {
     width: "100%",
     height: "100%",
     objectFit: "cover",
+    objectPosition: "center top", // portrait frames: keep the heads, lose the feet
+    background: "#0a0a0a",
     display: "block",
     pointerEvents: "none",
   },

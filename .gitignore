@@ -12,3 +12,8 @@ storage/
 # local-only: guest contact data and credential backups
 scripts/ancc_easter_delivery.py
 .env.bak-*
+
+# face service: model files (download from the OpenCV zoo, see face/server.py) and its Python env
+assets/face/*.onnx
+face/venv/
+face/service.pid

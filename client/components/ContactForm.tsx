@@ -29,9 +29,13 @@ export function ContactForm() {
 
   // A card still being drawn is included too: delivery waits for it (a few minutes at
   // most) and sends the photos without it if it fails
-  const selected = photos.filter(
+  const extras = useStore((s) => s.extras);
+  const suggestions = useStore((s) => s.suggestions);
+  const own = photos.filter(
     (p) => p.selected && (p.status === "ready" || (p.kind === "card" && p.status === "processing"))
   );
+  // Photos from other sessions the guest tapped under "Want these too?"
+  const selected = [...own, ...suggestions.filter((p) => extras.includes(p.id))];
   const isOnline = deliveryMode === "online";
   const smsEnabled = useStore((s) => s.smsEnabled);
 

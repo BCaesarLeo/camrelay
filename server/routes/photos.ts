@@ -40,7 +40,7 @@ function pathToUrl(diskPath: string): string {
   return `/storage/photos/${parts.slice(-2).join("/")}`;
 }
 
-function rowToPhoto(row: any): Photo {
+export function rowToPhoto(row: any): Photo {
   return {
     id: row.id,
     sessionId: row.session_id,
