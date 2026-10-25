@@ -57,7 +57,7 @@ export function AiCardOffer({ size, sourcePhotoId }: { size: "compact" | "tile";
           <p style={{ ...styles.title, fontSize: compact ? 13 : 15 }}>Pick a style and we'll draw it</p>
           {choices.map((c) => (
             <button key={c.id} onClick={(e) => { e.stopPropagation(); pick(c.id); }} style={styles.choice}>
-              <span style={styles.emoji}>{c.emoji}</span> {c.label}
+              {c.label}
             </button>
           ))}
           <button onClick={(e) => { e.stopPropagation(); setPicking(false); }} style={{ ...styles.choice, ...styles.choiceNo }}>

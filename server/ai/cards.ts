@@ -79,10 +79,10 @@ const THEMES: Record<CardTheme, { colors: string; scene: string; wardrobe: strin
     style: "a polished 3D animated-movie look (Pixar / Disney style), warm candlelight, expressive but faithful faces",
     // The four houses are the guest's choices; "Surprise me" can also land on staff or the flying team
     choices: [
-      { id: "lions", label: "Red & gold", emoji: "🦁", costume: "scarlet-and-gold house scarves and ties with a lion crest" },
-      { id: "eagles", label: "Blue & bronze", emoji: "🦅", costume: "blue-and-bronze house scarves and ties with an eagle crest" },
-      { id: "badgers", label: "Yellow & black", emoji: "🦡", costume: "yellow-and-black house scarves and ties with a badger crest" },
-      { id: "serpents", label: "Green & silver", emoji: "🐍", costume: "green-and-silver house scarves and ties with a serpent crest" },
+      { id: "lions", label: "Gryffindor", emoji: "🦁", costume: "scarlet-and-gold house scarves and ties with a lion crest" },
+      { id: "eagles", label: "Ravenclaw", emoji: "🦅", costume: "blue-and-bronze house scarves and ties with an eagle crest" },
+      { id: "badgers", label: "Hufflepuff", emoji: "🦡", costume: "yellow-and-black house scarves and ties with a badger crest" },
+      { id: "serpents", label: "Slytherin", emoji: "🐍", costume: "green-and-silver house scarves and ties with a serpent crest" },
       { id: "staff", label: "Professors", emoji: "🧙", costume: "professors of the school in rich velvet robes, pointed hats and spectacles", surpriseOnly: true },
       { id: "flyers", label: "Flying team", emoji: "🧹", costume: "the school's broomstick flying team in leather pads and goggles, holding broomsticks", surpriseOnly: true },
     ],
