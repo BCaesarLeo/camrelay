@@ -16,6 +16,7 @@ import { captureRoutes } from "./routes/capture.js";
 import { eventRoutes, getActiveEvent } from "./routes/events.js";
 import { contactRoutes } from "./routes/contacts.js";
 import { cardRoutes } from "./routes/cards.js";
+import { getLanIp, lanAddresses } from "./lanIp.js";
 import { suggestionRoutes, selectScreen } from "./routes/suggestions.js";
 import { startFaceService, suggestionsEnabled, faceServiceConfigured } from "./faces/index.js";
 import { cardsAvailable, cardsEnabled, failOrphanedCards } from "./ai/cards.js";
@@ -227,23 +228,14 @@ async function main() {
   const lanIp = getLanIp();
   console.log(`\n  Photo Booth Server Running`);
   console.log(`  Local:   http://localhost:${config.port}`);
-  console.log(`  Network: http://${lanIp}:${config.port}`);
+  console.log(`  Network: http://${lanIp}:${config.port}   (iPads use this one)`);
+  for (const a of lanAddresses()) {
+    if (a.address !== lanIp) console.log(`           http://${a.address}:${config.port}   (${a.iface}${a.internet ? ", internet" : ""})`);
+  }
   console.log(`  Watch:   ${config.watchFolder}`);
   console.log(`  Event:   ${config.eventName}\n`);
 }
 
-function getLanIp(): string {
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces)) {
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === "IPv4" && !addr.internal) {
-        return addr.address;
-      }
-    }
-  }
-  return "localhost";
-}
 
 main().catch((err) => {
   console.error("Failed to start server:", err);

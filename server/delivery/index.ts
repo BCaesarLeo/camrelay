@@ -1,7 +1,7 @@
 import twilio from "twilio";
 import { db } from "../db.js";
+import { getLanIp } from "../lanIp.js";
 import { config } from "../config.js";
-import os from "os";
 
 // Lazy-init Twilio client (env vars loaded by dotenv in config.ts before this runs)
 let _twilioClient: ReturnType<typeof twilio> | null = null;
@@ -152,15 +152,3 @@ function getStatusLabel(r: any): "sent" | "waiting" | "retrying" | "stuck" {
   return r.attempts >= 8 ? "stuck" : "retrying";
 }
 
-function getLanIp(): string {
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces)) {
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === "IPv4" && !addr.internal) {
-        return addr.address;
-      }
-    }
-  }
-  return "localhost";
-}

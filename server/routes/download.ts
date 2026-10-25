@@ -1,12 +1,12 @@
 import type { FastifyInstance } from "fastify";
 import { nanoid } from "nanoid";
 import { db } from "../db.js";
+import { getLanIp } from "../lanIp.js";
 import { config } from "../config.js";
 import { markLocalDownload } from "../delivery/index.js";
 import QRCode from "qrcode";
 import archiver from "archiver";
 import path from "path";
-import os from "os";
 import type { DownloadInfo } from "../../shared/types.js";
 
 const createToken = db.prepare(`
@@ -34,20 +34,6 @@ const getTokenByToken = db.prepare(`
   SELECT * FROM download_tokens WHERE token = ?
 `);
 
-function getLanIp(): string {
-  // Use configured IP if set (for multi-network setups)
-  if (process.env.LAN_IP) return process.env.LAN_IP;
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces)) {
-    if (!iface) continue;
-    for (const addr of iface) {
-      if (addr.family === "IPv4" && !addr.internal) {
-        return addr.address;
-      }
-    }
-  }
-  return "localhost";
-}
 
 export async function downloadRoutes(app: FastifyInstance) {
   // Generate download link + QR for a session

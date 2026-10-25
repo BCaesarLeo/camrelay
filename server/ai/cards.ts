@@ -11,6 +11,7 @@ import { db } from "../db.js";
 import { config } from "../config.js";
 import { broadcast } from "../ws/index.js";
 import type { Photo } from "../../shared/types.js";
+import { isOnline } from "../delivery/index.js";
 
 const MODEL = "gemini-3-pro-image";
 const REQUEST_TIMEOUT_MS = 75_000; // one attempt; cards normally take 16–20 s
@@ -111,7 +112,7 @@ function countToday() {
 
 // Available = the guest should be offered a card right now
 export function cardsAvailable(): boolean {
-  return cardsEnabled() && cardsConfigured() && Date.now() >= stats.pausedUntil && countToday() < DAILY_CAP;
+  return cardsEnabled() && cardsConfigured() && isOnline() && Date.now() >= stats.pausedUntil && countToday() < DAILY_CAP;
 }
 
 export function cardStats() {
