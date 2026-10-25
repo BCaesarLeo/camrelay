@@ -35,6 +35,7 @@ const ses = new SESClient({ region: "us-east-1" });
 
 const BUCKET = "studiorelay-photos";
 const CDN_DOMAIN = "https://d2kzchvzabp5a9.cloudfront.net";
+const DOWNLOAD_SITE = "https://studiorelay.app"; // /d/<event>/<contact> redirects to CDN_DOMAIN/delivery/...
 const FROM_EMAIL = "photos@dcav.pro";
 
 let uploading = false;
@@ -203,7 +204,8 @@ async function processContact(contact: any) {
     const msg = err instanceof Error ? err.message : String(err);
     throw new Error(`Upload failed: ${msg}`);
   }
-  const downloadUrl = `${CDN_DOMAIN}/${downloadPageKey}`;
+  // The link guests see: a studiorelay.app address that redirects to the page on CloudFront
+  const downloadUrl = `${DOWNLOAD_SITE}/d/${contact.event_id}/${contact.id}`;
   const count = usable.length;
   const problems: string[] = [];
 
