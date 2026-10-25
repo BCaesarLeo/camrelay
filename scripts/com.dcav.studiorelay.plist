@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- StudioRelay kiosk: starts at login and is restarted by macOS if it ever exits.
+       Install:   cp scripts/com.dcav.studiorelay.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.dcav.studiorelay.plist
+       Restart:   launchctl kickstart -k gui/$(id -u)/com.dcav.studiorelay
+       Stop:      launchctl unload ~/Library/LaunchAgents/com.dcav.studiorelay.plist
+       Log:       /tmp/cam-kiosk.log -->
+  <key>Label</key>
+  <string>com.dcav.studiorelay</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ssmacpro/.nvm/versions/node/v20.17.0/bin/node</string>
+    <string>dist/server/server/index.js</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/ssmacpro/dev/cam</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/Users/ssmacpro/.nvm/versions/node/v20.17.0/bin:/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key>
+    <string>/Users/ssmacpro</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ThrottleInterval</key>
+  <integer>5</integer>
+  <key>StandardOutPath</key>
+  <string>/tmp/cam-kiosk.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/cam-kiosk.log</string>
+</dict>
+</plist>

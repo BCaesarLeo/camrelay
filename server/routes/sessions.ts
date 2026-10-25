@@ -107,6 +107,24 @@ export function createDetachedSession(
   return id;
 }
 
+// A frame arrived but no session is open (the photographer forgot "+ New Session", or an
+// event switch expired them all). Open one so the frame lands somewhere visible.
+export function ensureActiveSession(): string | null {
+  const active = getActiveSession.get() as { id: string } | undefined;
+  if (active) return active.id;
+  const eventId = getActiveEventId();
+  if (!eventId) return null;
+  const id = nanoid();
+  const shortCode = nanoid(6).toUpperCase();
+  const { max_num } = getMaxSessionNumberForEvent.get(eventId) as { max_num: number };
+  const sessionNumber = max_num + 1;
+  const color = SESSION_COLORS[(sessionNumber - 1) % SESSION_COLORS.length];
+  createSession.run(id, eventId, shortCode, null, sessionNumber, color);
+  incrementEventSessionCount.run(eventId);
+  console.log(`[sessions] No session was open — started session ${sessionNumber} automatically`);
+  return id;
+}
+
 export function recountSession(sessionId: string) {
   recount.run(sessionId);
 }

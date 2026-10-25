@@ -26,6 +26,15 @@ import { startInternetMonitor } from "./delivery/index.js";
 import { startCloudSync, smsEnabled } from "./delivery/cloud.js";
 import { startDynamoSync } from "./delivery/dynamo.js";
 
+// Background work (uploads, face indexing, cards) runs outside any request. If something
+// slips through its own error handling, log it and keep serving rather than exit.
+process.on("unhandledRejection", (reason) => {
+  console.error("[fatal?] Unhandled rejection (kiosk keeps running):", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("[fatal?] Uncaught exception (kiosk keeps running):", err);
+});
+
 async function main() {
   // Ensure storage directories exist
   const dirs = [

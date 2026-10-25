@@ -4,6 +4,7 @@ import { convertPhoto, isSupportedImage } from "./convert.js";
 import { config } from "../config.js";
 import { db } from "../db.js";
 import { broadcast } from "../ws/index.js";
+import { ensureActiveSession } from "../routes/sessions.js";
 import { indexPhoto } from "../faces/index.js";
 import path from "path";
 import type { Photo } from "../../shared/types.js";
@@ -49,9 +50,9 @@ function getActiveSessionInfo(): { sessionNumber: number; eventId: string } | nu
 export function enqueuePhoto(filePath: string) {
   if (!isSupportedImage(filePath)) return;
 
-  const sessionId = getActiveSessionId();
+  const sessionId = getActiveSessionId() ?? ensureActiveSession();
   if (!sessionId) {
-    console.log(`No active session, skipping: ${path.basename(filePath)}`);
+    console.error(`No event exists — cannot file ${path.basename(filePath)}. Create an event on /host.`);
     return;
   }
 
