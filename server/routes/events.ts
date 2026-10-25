@@ -15,9 +15,15 @@ const getAllEvents = db.prepare(`
   SELECT * FROM events ORDER BY created_at DESC
 `);
 
-// Active event = most recent one. To switch, we reorder by updating created_at.
-// Simpler: add a separate tracking mechanism.
-let activeEventIdOverride: string | null = null;
+// The active event is the one the host chose, remembered in the settings table so a
+// restart never silently drops back to an older event. Falls back to the newest event.
+const getActiveSetting = db.prepare("SELECT value FROM settings WHERE key = 'active_event'");
+const putActiveSetting = db.prepare(
+  "INSERT INTO settings (key, value) VALUES ('active_event', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+);
+function rememberActive(id: string) {
+  putActiveSetting.run(id);
+}
 
 function rowToEvent(row: any): Event {
   return {
@@ -29,12 +35,8 @@ function rowToEvent(row: any): Event {
 }
 
 export function getActiveEventId(): string | null {
-  if (activeEventIdOverride) {
-    // Verify it still exists
-    const row = getEvent.get(activeEventIdOverride);
-    if (row) return activeEventIdOverride;
-    activeEventIdOverride = null;
-  }
+  const saved = (getActiveSetting.get() as { value: string } | undefined)?.value;
+  if (saved && getEvent.get(saved)) return saved;
   // Default to most recent
   const row = getAllEvents.get() as any;
   return row?.id ?? null;
@@ -76,7 +78,7 @@ export async function eventRoutes(app: FastifyInstance) {
     db.prepare("UPDATE sessions SET status = 'expired' WHERE status = 'active'").run();
 
     createEvent.run(id, name);
-    activeEventIdOverride = id;
+    rememberActive(id);
 
     const row = getEvent.get(id);
     return rowToEvent(row);
@@ -92,7 +94,7 @@ export async function eventRoutes(app: FastifyInstance) {
       // Deactivate all sessions
       db.prepare("UPDATE sessions SET status = 'expired' WHERE status = 'active'").run();
 
-      activeEventIdOverride = req.params.id;
+      rememberActive(req.params.id);
       return rowToEvent(row);
     }
   );
