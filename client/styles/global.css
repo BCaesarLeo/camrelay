@@ -165,8 +165,9 @@ button {
 .sel .light .choose:not(.on):not(.action) { animation: sel-breathe 1.8s ease-in-out infinite; }
 .sel .light .choose.pop { animation: sel-pop .35s ease-out; }
 @media (prefers-reduced-motion: reduce) { .sel .light * { animation: none !important; } }
-.sel .light .foot { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px max(18px, env(safe-area-inset-bottom)); }
-.sel .light .choose { display: flex; align-items: center; justify-content: center; gap: 14px; flex: 1; max-width: 560px; min-height: 76px; border: 2px solid rgba(255,255,255,.6); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
+.sel .light .foot { flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 12px 20px max(18px, env(safe-area-inset-bottom)); }
+.sel .light .foot .go { min-height: 76px; padding: 18px 28px; white-space: nowrap; }
+.sel .light .choose { display: flex; align-items: center; justify-content: center; gap: 14px; flex: 1; max-width: 480px; min-height: 76px; border: 2px solid rgba(255,255,255,.6); font-size: 16px; letter-spacing: .1em; text-transform: uppercase; }
 .sel .light .choose i { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; }
 .sel .light .choose i svg { opacity: 0; width: 14px; height: 14px; }
 .sel .light .choose.on { background: #2dd4a8; border-color: #2dd4a8; color: #fff; }

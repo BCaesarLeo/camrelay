@@ -333,6 +333,17 @@ export function SelectScreen() {
             </i>
             <span></span>
           </button>
+          {/* Finish from here: no need to go back to the grid first */}
+          <button
+            className="go"
+            disabled={total === 0}
+            onClick={() => {
+              carousel.current?.hide();
+              setScreen("contact");
+            }}
+          >
+            Get my {plural(total, "photo")}
+          </button>
         </div>
       </div>
     </div>

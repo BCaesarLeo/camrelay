@@ -483,14 +483,15 @@ const styles: Record<string, React.CSSProperties> = {
   cardCover: {
     position: "relative",
     width: "100%",
-    aspectRatio: "16 / 9",
+    // squarer than the old 16:9 so a portrait frame shows the people, not the ceiling
+    aspectRatio: "5 / 4",
     overflow: "hidden",
   },
   coverImg: {
     width: "100%",
     height: "100%",
     objectFit: "cover",
-    objectPosition: "center top", // portrait frames: keep the heads, lose the feet
+    objectPosition: "center 30%", // faces sit below the backdrop top in these frames
     background: "#0a0a0a",
     display: "block",
     pointerEvents: "none",
