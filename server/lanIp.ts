@@ -27,8 +27,12 @@ export function lanAddresses(): { iface: string; address: string; internet: bool
   const inet = internetInterface();
   const out: { iface: string; address: string; internet: boolean }[] = [];
   for (const [iface, addrs] of Object.entries(os.networkInterfaces())) {
+    // en* only: VPN tunnels (utun), bridges, AirDrop (awdl/llw) and the like are never where iPads are
+    if (!/^en\d+$/.test(iface)) continue;
     for (const a of addrs ?? []) {
-      if (a.family === "IPv4" && !a.internal) out.push({ iface, address: a.address, internet: iface === inet });
+      if (a.family !== "IPv4" || a.internal) continue;
+      if (a.address.startsWith("100.")) continue; // carrier-grade NAT range used by Tailscale-style VPNs
+      out.push({ iface, address: a.address, internet: iface === inet });
     }
   }
   return out;

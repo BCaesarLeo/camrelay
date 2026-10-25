@@ -143,7 +143,8 @@ const markReady = db.prepare(`
   UPDATE photos SET full_path = ?, thumb_path = ?, status = 'ready', width = ?, height = ?, file_size = ?
   WHERE id = ?
 `);
-const markError = db.prepare("UPDATE photos SET status = 'error', error_message = ? WHERE id = ?");
+// A failed card is also unticked, so selected counts and QR downloads never include it
+const markError = db.prepare("UPDATE photos SET status = 'error', selected = 0, error_message = ? WHERE id = ?");
 const getPhoto = db.prepare("SELECT * FROM photos WHERE id = ?");
 const getSession = db.prepare("SELECT * FROM sessions WHERE id = ?");
 const existingCard = db.prepare(
@@ -217,6 +218,7 @@ export function requestCard(sessionId: string, sourcePhotoId: string): RequestRe
 async function runJob(id: string, sessionId: string, sourcePath: string, folder: string, queuedAt: number) {
   const fail = (msg: string) => {
     markError.run(msg.slice(0, 300), id);
+    recountSession.run(sessionId);
     const row = getPhoto.get(id) as any;
     if (row) broadcast(sessionId, { type: "photo_added", photo: rowToPhoto(row) });
     console.error(`[cards] Card ${id} failed: ${msg.slice(0, 200)}`);
@@ -331,6 +333,9 @@ async function storeCard(image: Buffer, id: string, folder: string) {
 // A card left 'processing' by a restart would otherwise hold up that guest's delivery
 export function failOrphanedCards() {
   const rows = db.prepare("SELECT id, session_id FROM photos WHERE kind = 'card' AND status = 'processing'").all() as any[];
-  for (const r of rows) markError.run("Kiosk restarted while the card was being drawn", r.id);
+  for (const r of rows) {
+    markError.run("Kiosk restarted while the card was being drawn", r.id);
+    recountSession.run(r.session_id);
+  }
   if (rows.length) console.log(`[cards] Marked ${rows.length} unfinished card(s) from before the restart as failed`);
 }

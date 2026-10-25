@@ -3,8 +3,9 @@ import { suggestFor, faceStats, setSuggestionsEnabled, suggestionsEnabled } from
 import { db } from "../db.js";
 
 // Which selection screen the kiosk shows: the new grid + swipe view (default) or the classic one
+const getSelectScreen = db.prepare("SELECT value FROM settings WHERE key = 'select_screen'");
 export function selectScreen(): "new" | "classic" {
-  const row = db.prepare("SELECT value FROM settings WHERE key = 'select_screen'").get() as { value: string } | undefined;
+  const row = getSelectScreen.get() as { value: string } | undefined;
   return row?.value === "classic" ? "classic" : "new";
 }
 

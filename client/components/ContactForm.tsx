@@ -36,9 +36,13 @@ export function ContactForm() {
   const own = photos.filter(
     (p) => p.selected && (p.status === "ready" || (p.kind === "card" && p.status === "processing"))
   );
-  // Photos from other sessions the guest tapped ("Want these too?" or a neighbouring session)
-  const others = [...suggestions, ...(neighbours.before?.photos ?? []), ...(neighbours.after?.photos ?? [])];
-  const selected = [...own, ...others.filter((p) => extras.includes(p.id))];
+  // Photos from other sessions the guest tapped ("Want these too?" or a neighbouring session).
+  // One copy each, and only for online delivery: the local QR download serves this session only.
+  const others = new Map<string, (typeof suggestions)[number]>();
+  for (const p of [...suggestions, ...(neighbours.before?.photos ?? []), ...(neighbours.after?.photos ?? [])]) {
+    if (extras.includes(p.id) && !own.some((o) => o.id === p.id)) others.set(p.id, p);
+  }
+  const selected = deliveryMode === "online" ? [...own, ...others.values()] : own;
   const backScreen = selectScreen === "classic" ? "review" : "session";
   const isOnline = deliveryMode === "online";
   const smsEnabled = useStore((s) => s.smsEnabled);

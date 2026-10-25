@@ -128,7 +128,7 @@ async function processContact(contact: any) {
   // Still converting — not a failure, just check again on the next pass.
   // An AI card is waited for too, but never for more than a few minutes: if the
   // drawer hangs, the guest's photos go out without it.
-  const CARD_WAIT_MS = 4 * 60_000;
+  const CARD_WAIT_MS = 6 * 60_000; // > queue wait (3 min) + one request (75 s) in ai/cards.ts
   const stillBusy = (p: any) =>
     p.status === "processing" &&
     !(p.kind === "card" && Date.now() - sqliteTimeMs(p.created_at) > CARD_WAIT_MS);

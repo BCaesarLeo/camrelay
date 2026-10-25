@@ -33,7 +33,9 @@ export function SelectScreen() {
   const openRegroup = useStore((s) => s.openRegroup);
   const eventName = useStore((s) => s.eventName);
   const sessions = useStore((s) => s.sessions);
-  const suggestionsEnabled = useStore((s) => s.suggestionsEnabled);
+  const deliveryMode = useStore((s) => s.deliveryMode);
+  // Photos from other sessions can only go out by email/text, so offer them in online mode only
+  const suggestionsEnabled = useStore((s) => s.suggestionsEnabled) && deliveryMode === "online";
   const suggestions = useStore((s) => s.suggestions);
   const extras = useStore((s) => s.extras);
   const loadSuggestions = useStore((s) => s.loadSuggestions);
@@ -110,6 +112,7 @@ export function SelectScreen() {
 
   function buildItems(): SlideItem[] {
     const neighbour = (when: "before" | "after"): SlideItem[] => {
+      if (deliveryMode !== "online") return [];
       const s = neighbourSession(when);
       if (!s) return [];
       if (!neighbours[when]) return [moreCard(when)];
@@ -208,6 +211,7 @@ export function SelectScreen() {
   const total = picked.size + (drawingCard ? 1 : 0);
 
   const neighbourSection = (when: "before" | "after") => {
+    if (deliveryMode !== "online") return null;
     const s = neighbourSession(when);
     if (!s) return null;
     const list = neighbourPhotos(when);

@@ -5,13 +5,14 @@
 //
 // Isolation: indexing runs in its own queue after the photo is already 'ready', so the normal
 // flow never waits on it. If the service is down, suggestions are simply empty.
-import { spawn, type ChildProcess } from "child_process";
+import { spawn, execFileSync, type ChildProcess } from "child_process";
 import fs from "fs";
 import path from "path";
 import PQueue from "p-queue";
 import { nanoid } from "nanoid";
 import { db } from "../db.js";
 import { rowToPhoto } from "../routes/photos.js";
+import { getActiveEventId } from "../routes/events.js";
 import type { Photo } from "../../shared/types.js";
 
 const PORT = Number(process.env.FACE_PORT || 3101);
@@ -76,8 +77,12 @@ function freePort() {
   try {
     const pid = Number(fs.readFileSync(PID_FILE, "utf8").trim());
     if (pid && pid !== process.pid) {
-      process.kill(pid, "SIGTERM");
-      console.log(`[faces] Stopped stale face service (pid ${pid})`);
+      // After a reboot the pid may belong to something else entirely — only kill our own script
+      const cmd = execFileSync("ps", ["-p", String(pid), "-o", "command="], { encoding: "utf8", timeout: 2000 }).trim();
+      if (cmd.includes("face/server.py")) {
+        process.kill(pid, "SIGTERM");
+        console.log(`[faces] Stopped stale face service (pid ${pid})`);
+      }
     }
   } catch {
     // no pid file, or the process is already gone — the normal case
@@ -106,6 +111,14 @@ function launch() {
     const line = String(d).trim();
     // OpenCV prints harmless backend warnings on startup; keep real errors
     if (line && !line.includes("WARN:")) console.error(`[faces] ${line.slice(0, 300)}`);
+  });
+  proc.on("error", (err) => {
+    // spawn itself failed (python missing / not executable): 'exit' never fires, so retry from here
+    state.up = false;
+    state.proc = null;
+    state.lastError = `cannot start face service: ${err.message}`;
+    console.error(`[faces] Cannot start face service: ${err.message}`);
+    if (!state.stopping) setTimeout(launch, 30_000);
   });
   proc.on("exit", (code) => {
     state.up = false;
@@ -162,7 +175,7 @@ const insertFace = db.prepare(
 const pendingPhotos = db.prepare(`
   SELECT p.id FROM photos p JOIN sessions s ON p.session_id = s.id
   WHERE p.status = 'ready' AND p.kind = 'photo' AND p.face_status IN ('pending', 'failed')
-    AND s.event_id = (SELECT event_id FROM sessions WHERE status = 'active' ORDER BY created_at DESC LIMIT 1)
+    AND s.event_id = ?
   ORDER BY p.created_at DESC LIMIT 25
 `);
 
@@ -174,7 +187,9 @@ export function indexPhoto(photoId: string) {
 
 function backfill() {
   if (!state.up || indexQueue.size > 0) return;
-  for (const row of pendingPhotos.all() as { id: string }[]) {
+  const eventId = getActiveEventId();
+  if (!eventId) return;
+  for (const row of pendingPhotos.all(eventId) as { id: string }[]) {
     if ((attempts.get(row.id) ?? 0) >= 3) continue;
     indexPhoto(row.id);
   }
@@ -232,11 +247,15 @@ export interface SuggestedPhoto extends Photo {
   people: number;
 }
 
-const facesForSession = db.prepare("SELECT id, photo_id, emb FROM faces WHERE session_id = ?");
+// Ownership comes from the photos table at query time, so a photo regrouped with "Not us?"
+// takes its faces with it (faces.session_id/event_id are only what was true at index time)
+const facesForSession = db.prepare(`
+  SELECT f.id, f.photo_id, f.emb FROM faces f JOIN photos p ON f.photo_id = p.id WHERE p.session_id = ?
+`);
 const facesForOthers = db.prepare(`
-  SELECT f.id, f.photo_id, f.session_id, f.emb
-  FROM faces f JOIN photos p ON f.photo_id = p.id
-  WHERE f.event_id = ? AND f.session_id != ? AND p.status = 'ready' AND p.kind = 'photo'
+  SELECT f.id, f.photo_id, p.session_id, f.emb
+  FROM faces f JOIN photos p ON f.photo_id = p.id JOIN sessions s ON p.session_id = s.id
+  WHERE s.event_id = ? AND p.session_id != ? AND p.status = 'ready' AND p.kind = 'photo'
 `);
 const getSessionRow = db.prepare("SELECT * FROM sessions WHERE id = ?");
 const getPhotoRow = db.prepare("SELECT * FROM photos WHERE id = ?");
@@ -320,9 +339,11 @@ export function suggestFor(sessionId: string): SuggestedPhoto[] {
 // ---- host page ------------------------------------------------------------------------
 
 export function faceStats() {
-  const eventId = (db.prepare("SELECT event_id FROM sessions WHERE status = 'active' ORDER BY created_at DESC LIMIT 1").get() as any)?.event_id ?? null;
+  const eventId = getActiveEventId();
   const faces = eventId
-    ? (db.prepare("SELECT COUNT(*) as n FROM faces WHERE event_id = ?").get(eventId) as any).n
+    ? (db.prepare(
+        "SELECT COUNT(*) as n FROM faces f JOIN photos p ON f.photo_id = p.id JOIN sessions s ON p.session_id = s.id WHERE s.event_id = ?"
+      ).get(eventId) as any).n
     : 0;
   const pending = eventId
     ? (db.prepare(
